@@ -22,6 +22,20 @@
         }
         .search-bar { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: #fff; outline: none; box-sizing: border-box; font-size: 14px; }
         
+        /* Category Ribbon Styling */
+        .category-ribbon { 
+            display: flex; overflow-x: auto; gap: 10px; padding: 10px; 
+            background: #000; border-bottom: 1px solid var(--border);
+            scrollbar-width: none;
+        }
+        .category-ribbon::-webkit-scrollbar { display: none; }
+        .cat-chip { 
+            white-space: nowrap; padding: 7px 15px; border-radius: 20px; 
+            background: var(--card); border: 1px solid var(--border); 
+            font-size: 12px; font-weight: 600; color: var(--gray); cursor: pointer;
+        }
+        .cat-chip.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
         .main-content { 
             flex-grow: 1; padding: 10px;
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
@@ -31,6 +45,7 @@
         .item-card { 
             background: var(--card); border: 1px solid var(--border); 
             border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;
+            text-decoration: none; color: inherit; /* Card is now a button/link */
         }
 
         .image-container { width: 100%; aspect-ratio: 1/1; background: #0a0a0a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -55,48 +70,28 @@
             text-align: center; display: block;
         }
 
-        /* --- POPUP STYLES --- */
-        #popupOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 5000;
-            display: none; backdrop-filter: blur(5px);
-        }
-
-        #recordSheet {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: #111; border-top: 2px solid var(--accent);
-            border-radius: 20px 20px 0 0; z-index: 5001;
-            transform: translateY(100%);
-            transition: transform 0.3s ease-out;
-            padding: 20px; box-sizing: border-box;
-        }
-
+        #popupOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; display: none; backdrop-filter: blur(5px); }
+        #recordSheet { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; border-top: 2px solid var(--accent); border-radius: 20px 20px 0 0; z-index: 5001; transform: translateY(100%); transition: transform 0.3s ease-out; padding: 20px; box-sizing: border-box; }
         .sheet-active { transform: translateY(0) !important; }
-
         .sheet-handle { width: 40px; height: 4px; background: #333; border-radius: 10px; margin: 0 auto 15px; }
-        
         .record-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .record-option {
-            background: #1a1a1a; border: 1px solid #222;
-            padding: 15px; border-radius: 12px;
-            color: var(--text); text-decoration: none;
-            display: flex; justify-content: space-between; align-items: center;
-            font-weight: 600; font-size: 14px;
-        }
-        .record-option i { color: var(--accent); }
-
-        /* Navigation Fixes */
+        .record-option { background: #1a1a1a; border: 1px solid #222; padding: 15px; border-radius: 12px; color: var(--text); text-decoration: none; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; }
+        
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: #000; display: flex; border-top: 1px solid var(--border); z-index: 4000; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { color: var(--gray); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; text-decoration: none; border: none; background: none; outline: none; }
         .nav-item.active { color: var(--accent); }
         .icon { width: 22px; height: 22px; margin-bottom: 4px; fill: currentColor; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <header class="header">
-        <input type="text" id="searchBar" class="search-bar" placeholder="Zawnna (Search items)...">
+        <input type="text" id="searchBar" class="search-bar" placeholder="Hming, Category, or Price search na...">
     </header>
+
+    <div class="category-ribbon" id="categoryRibbon"></div>
 
     <main class="main-content" id="inventory-grid"></main>
 
@@ -114,17 +109,17 @@
     </div>
 
     <nav class="bottom-nav">
-        <a href="homepage.html" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>HOME</span></a>
-        <a href="add.html" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6-2v-6H5v-2h6V5h2v6h6v2z"/></svg><span>ADD</span></a>
-        <button id="openRecord" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg><span>RECORD</span></button>
-        <a href="admin.html" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg><span>ADMIN</span></a>
+        <a href="homepage.html" class="nav-item active"><svg class="icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>HOME</span></a>
+        <button id="openRecord" class="nav-item hidden"><svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg><span>RECORD</span></button>
+        <a href="admin.html" id="adminBtn" class="nav-item hidden"><svg class="icon" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg><span>ADMIN</span></a>
+        <a href="account.html" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>ACCOUNT</span></a>
     </nav>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Your Firebase config...
         const firebaseConfig = {
             apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
             authDomain: "kimkimenterprise-516c4.firebaseapp.com",
@@ -135,53 +130,100 @@
         };
 
         const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // POPUP LOGIC
+        // Permissions
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    if (data.isAdmin) {
+                        document.getElementById('openRecord').classList.remove('hidden');
+                        document.getElementById('adminBtn').classList.remove('hidden');
+                    } else if (data.isAuthorized) {
+                        document.getElementById('openRecord').classList.remove('hidden');
+                    }
+                }
+            }
+        });
+
+        // Popup UI
         const openBtn = document.getElementById('openRecord');
         const overlay = document.getElementById('popupOverlay');
         const sheet = document.getElementById('recordSheet');
-
         openBtn.addEventListener('click', () => {
             overlay.style.display = 'block';
             setTimeout(() => sheet.classList.add('sheet-active'), 10);
         });
-
         overlay.addEventListener('click', () => {
             sheet.classList.remove('sheet-active');
             setTimeout(() => overlay.style.display = 'none', 300);
         });
 
-        // Your existing Render and Search logic below...
+        // Global State
+        let allItems = [];
+        let activeCat = 'All';
+
+        // Load Data
         onSnapshot(collection(db, "inventory_item"), (snap) => {
-            const allItems = [];
+            allItems = [];
+            let catSet = new Set(['All']);
+            
             snap.docs.forEach(doc => {
                 const data = doc.data();
+                const category = data.category || "General";
+                catSet.add(category);
+                
                 if (data.details) {
                     data.details.forEach(item => {
                         item.variations.forEach(v => {
+                            const uprice = parseFloat(v.price) || 0;
+                            const incount = parseFloat(v.inner) || 1;
                             allItems.push({
+                                docId: doc.id, // Needed for the link
                                 name: item.name,
+                                category: category,
                                 img: item.img || '',
                                 size: v.size || '-',
                                 qty: parseFloat(v.qty) || 0,
-                                inner: parseFloat(v.inner) || 1,
+                                inner: incount,
                                 unit: v.unit || 'set',
-                                price: parseFloat(v.price) || 0
+                                price: uprice,
+                                total: uprice * incount
                             });
                         });
                     });
                 }
             });
-            render(allItems);
+            renderChips(Array.from(catSet));
+            render();
         });
 
-        function render(items) {
-            document.getElementById('inventory-grid').innerHTML = items.map(i => {
-                const bundlePrice = (i.inner * i.price).toLocaleString('en-IN');
+        // Category Rendering
+        function renderChips(cats) {
+            document.getElementById('categoryRibbon').innerHTML = cats.map(c => 
+                `<div class="cat-chip ${activeCat === c ? 'active' : ''}" onclick="window.setCategory('${c}')">${c}</div>`
+            ).join('');
+        }
+
+        // Search and Filter Rendering
+        function render() {
+            const term = document.getElementById('searchBar').value.toLowerCase().trim();
+            const grid = document.getElementById('inventory-grid');
+
+            const filtered = allItems.filter(i => {
+                const matchesCat = (activeCat === 'All' || i.category === activeCat);
+                const searchStr = `${i.name} ${i.category} ${i.price} ${i.total}`.toLowerCase();
+                const matchesSearch = searchStr.includes(term);
+                return matchesCat && matchesSearch;
+            });
+
+            grid.innerHTML = filtered.map(i => {
                 const imageSrc = i.img && i.img.trim() !== "" ? i.img : 'https://via.placeholder.com/300/111/555?text=No+Photo';
                 return `
-                <div class="item-card">
+                <a href="item-view.html?id=${i.docId}" class="item-card">
                     <div class="image-container"><img src="${imageSrc}" class="item-image" loading="eager"></div>
                     <div class="item-info">
                         <div class="item-name">${i.name}</div>
@@ -192,20 +234,24 @@
                         <div class="calc-box">
                             <span class="calc-text">Rate Breakdown</span>
                             <div class="calc-math">₹${i.price} × ${i.inner} Pcs</div>
-                            <span class="total-price">₹${bundlePrice}</span>
+                            <span class="total-price">₹${i.total.toLocaleString('en-IN')}</span>
                         </div>
                     </div>
-                </div>`;
+                </a>`;
             }).join('');
         }
 
-        document.getElementById('searchBar').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.item-card').forEach(card => {
-                const name = card.querySelector('.item-name').innerText.toLowerCase();
-                card.style.display = name.includes(term) ? 'flex' : 'none';
+        // Global functions for window scope
+        window.setCategory = (c) => {
+            activeCat = c;
+            // Update chip styles manually for speed
+            document.querySelectorAll('.cat-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.innerText === c);
             });
-        });
+            render();
+        };
+
+        document.getElementById('searchBar').addEventListener('input', render);
     </script>
 </body>
 </html>

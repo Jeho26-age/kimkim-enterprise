@@ -72,6 +72,22 @@ export async function verifyAccess(requiredLevel = 'staff', showPopup) {
             // 5. If all checks pass
             document.body.style.visibility = "visible"; 
             resolve(userData);
+            // Add this to the bottom of p-checker.js
+export async function getUserRole() {
+    return new Promise((resolve) => {
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) resolve('none');
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                if (data.isAdmin) resolve('admin');
+                if (data.isAuthorized) resolve('staff');
+            }
+            resolve('none');
+        });
+    });
+}
+
         });
     });
 }
