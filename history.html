@@ -3,42 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload History | THAWMHNAW</title>
+    <title>Admin | History</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --bg: #000; --card: #111; --accent: #4ade80; --border: #222; --text: #fff; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 80px; }
-        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .back-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 10px; text-decoration: none; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
         
-        .history-card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 20px; border-left: 4px solid var(--accent); }
-        .history-date { color: var(--accent); font-weight: bold; font-size: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .header-section { position: sticky; top: 0; background: var(--bg); padding-bottom: 10px; z-index: 100; border-bottom: 1px solid #222; margin-bottom: 15px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; padding-top: 5px; }
+        .back-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
         
-        .con-block { background: #080808; border: 1px solid #1a1a1a; padding: 12px; border-radius: 10px; margin-top: 10px; }
-        .con-title { color: var(--accent); font-size: 13px; font-weight: bold; border-bottom: 1px solid #222; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .item-row { font-size: 12px; color: #aaa; margin-bottom: 4px; padding-left: 5px; }
-        .total-row { text-align: right; color: var(--accent); font-weight: bold; font-size: 13px; margin-top: 8px; border-top: 1px solid #222; padding-top: 5px; }
+        .search-container { position: relative; margin-bottom: 10px; }
+        .search-bar { width: 100%; background: var(--card); border: 1px solid var(--border); padding: 10px 35px; border-radius: 8px; color: #fff; box-sizing: border-box; font-size: 14px; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #555; font-size: 12px; }
+
+        .filter-select { background: #1a1a1a; color: var(--accent); border: 1px solid #333; padding: 8px; border-radius: 8px; width: 100%; margin-bottom: 10px; font-size: 13px; font-weight: bold; }
+
+        /* Updated Summary Card */
+        .stats-card { background: #080808; border: 1px solid var(--accent); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.1); }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .stat-item { background: #111; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #222; }
+        .stat-val { display: block; font-size: 18px; font-weight: bold; color: var(--accent); }
+        .stat-lbl { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         
-        .empty-msg { text-align: center; color: #555; margin-top: 50px; font-style: italic; }
-        .nav-fixed { position: fixed; bottom: 0; left: 0; width: 100%; background: #080808; padding: 15px; border-top: 1px solid #222; text-align: center; }
+        .included-cons { border-top: 1px solid #222; padding-top: 10px; }
+        .included-lbl { font-size: 10px; color: var(--accent); margin-bottom: 8px; font-weight: bold; letter-spacing: 0.5px; }
+        
+        /* New Consignment Badge Style */
+        .cons-badge { display: inline-flex; align-items: center; background: #1a1a1a; border: 1px solid #333; padding: 4px 10px; border-radius: 6px; font-size: 11px; margin: 3px; color: #eee; }
+        .bag-count-small { background: var(--accent); color: #000; font-weight: bold; padding: 1px 5px; border-radius: 3px; margin-left: 6px; font-size: 10px; }
+
+        .history-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 12px; border-left: 3px solid var(--accent); }
+        .card-date { font-size: 10px; color: #555; margin-bottom: 5px; }
+        .card-id { color: var(--accent); font-weight: bold; font-size: 15px; margin-bottom: 8px; }
+        .item-row { background: #050505; padding: 8px; border-radius: 6px; margin-top: 5px; border: 1px solid #1a1a1a; }
+        .subtotal { text-align: right; color: var(--accent); font-weight: bold; font-size: 13px; margin-top: 8px; padding-top: 5px; border-top: 1px solid #222; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
-        <h2 style="margin:0; font-size:20px;">Upload History</h2>
+    <div class="header-section">
+        <div class="header">
+            <a href="reciver.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
+            <h2 style="margin:0; font-size: 16px;">History leh Summary</h2>
+        </div>
+
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchInput" class="search-bar" placeholder="Zawnna (ID, Date, Item...)" onkeyup="filterData()">
+        </div>
+
+        <select id="timeFilter" class="filter-select" onchange="filterData()">
+            <option value="all">A vaiin (All Time)</option>
+            <option value="7">Tun kar (7 Days)</option>
+            <option value="30">Tun thla (30 Days)</option>
+        </select>
     </div>
 
-    <div id="history-list"></div>
-
-    <div class="nav-fixed">
-        <button onclick="location.href='index.html'" style="background:var(--accent); color:#000; border:none; padding:10px 30px; border-radius:20px; font-weight:bold;">RETURN TO EDITOR</button>
+    <div class="stats-card">
+        <div class="stats-grid">
+            <div class="stat-item"><span class="stat-val" id="totalPcsStat">0</span><span class="stat-lbl">Total Pcs</span></div>
+            <div class="stat-item"><span class="stat-val" id="totalBagsStat">0</span><span class="stat-lbl">Total Bags</span></div>
+        </div>
+        <div class="included-cons">
+            <div class="included-lbl">CONSIGNMENT & BAG DETAILS:</div>
+            <div id="consList"></div>
+        </div>
     </div>
+
+    <div id="history-display"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, query, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
@@ -52,53 +89,84 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Fetch History strictly from history_data
-        const historyQuery = query(collection(db, "history_data"), orderBy("timestamp", "desc"));
+        let masterData = [];
 
-        onSnapshot(historyQuery, (snapshot) => {
-            const listDiv = document.getElementById('history-list');
-            if (snapshot.empty) {
-                listDiv.innerHTML = '<div class="empty-msg">No upload history found.</div>';
-                return;
-            }
-
-            let html = "";
+        onSnapshot(query(collection(db, "history_data"), orderBy("timestamp", "desc")), (snapshot) => {
+            masterData = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                const summary = data.summary || {};
+                const snap = data.snapshot || {};
+                const ts = data.timestamp ? data.timestamp.toDate() : new Date();
                 
+                for (const [cNo, cData] of Object.entries(snap)) {
+                    masterData.push({
+                        dateObj: ts,
+                        dateStr: data.date,
+                        consignmentNo: cNo,
+                        searchString: `${cNo} ${data.date} ${Object.keys(cData.items).join(' ')}`.toLowerCase(),
+                        ...cData
+                    });
+                }
+            });
+            filterData();
+        });
+
+        window.filterData = () => {
+            const timeVal = document.getElementById('timeFilter').value;
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const now = new Date();
+            let filtered = masterData;
+
+            if (timeVal !== "all") {
+                const limit = new Date();
+                limit.setDate(now.getDate() - parseInt(timeVal));
+                filtered = filtered.filter(item => item.dateObj >= limit);
+            }
+            if (searchVal) {
+                filtered = filtered.filter(item => item.searchString.includes(searchVal));
+            }
+            render(filtered);
+        };
+
+        function render(data) {
+            const listDiv = document.getElementById('history-display');
+            const consListDiv = document.getElementById('consList');
+            let html = "";
+            let consTags = "";
+            let tPcs = 0;
+            let tBags = 0;
+
+            data.forEach(item => {
+                tPcs += item.grandTotal;
+                tBags += item.bagCount;
+                
+                // Added bag count specifically here for the summary list
+                consTags += `
+                    <div class="cons-badge">
+                        <span>${item.consignmentNo}</span>
+                        <span class="bag-count-small">${item.bagCount} Bags</span>
+                    </div>`;
+
                 html += `
                 <div class="history-card">
-                    <div class="history-date">
-                        <span><i class="fa-solid fa-calendar-day"></i> ${data.date}</span>
-                        <span style="color:#555; font-size:10px;">ID: ${doc.id.slice(0,5)}</span>
-                    </div>`;
-
-                for (const [conNo, details] of Object.entries(summary)) {
-                    html += `
-                    <div class="con-block">
-                        <div class="con-title">
-                            <span>Consignment: ${conNo}</span>
-                            <span style="font-size:10px; opacity:0.7;">${details.bagCount || 0} BAGS</span>
-                        </div>`;
-
-                    for (const [itemName, sizes] of Object.entries(details.items || {})) {
-                        html += `<div style="color:#fff; font-size:12px; margin-top:5px; font-weight:bold;">${itemName}</div>`;
-                        for (const [size, info] of Object.entries(sizes)) {
-                            html += `<div class="item-row">- Size ${size}: ${info.qty} ${info.unit} (${info.totalPcs} pcs)</div>`;
-                        }
+                    <div class="card-date">${item.dateStr}</div>
+                    <div class="card-id">ID: ${item.consignmentNo}</div>`;
+                
+                for (const [itemName, sizes] of Object.entries(item.items)) {
+                    html += `<div class="item-row"><strong>${itemName}</strong>`;
+                    for (const [sz, info] of Object.entries(sizes)) {
+                        html += `<div style="color:#777; font-size:11px;">• Size ${sz}: ${info.totalPcs} pcs</div>`;
                     }
-
-                    html += `
-                        <div class="total-row">Total: ${details.grandTotal || 0} pcs</div>
-                    </div>`;
+                    html += `</div>`;
                 }
-
-                html += `</div>`;
+                html += `<div class="subtotal">Subtotal: ${item.grandTotal} pcs</div></div>`;
             });
 
-            listDiv.innerHTML = html;
-        });
+            document.getElementById('totalPcsStat').innerText = tPcs.toLocaleString();
+            document.getElementById('totalBagsStat').innerText = tBags;
+            consListDiv.innerHTML = consTags || '<span style="color:#444; font-size:11px;">A hmu zo lo.</span>';
+            listDiv.innerHTML = html || '<div style="text-align:center; padding:50px; color:#444;">No records found.</div>';
+        }
     </script>
 </body>
 </html>

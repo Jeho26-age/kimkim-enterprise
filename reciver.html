@@ -52,183 +52,225 @@
     </div>
 
     <input type="file" id="fileIn" accept="image/*" hidden>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    const firebaseConfig = {
+        apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+        authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+        projectId: "kimkimenterprise-516c4",
+        storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+        messagingSenderId: "782456699398",
+        appId: "1:782456699398:web:c069d267ea8d62b197e187"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
-            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
-            projectId: "kimkimenterprise-516c4",
-            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
-            messagingSenderId: "782456699398",
-            appId: "1:782456699398:web:c069d267ea8d62b197e187"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    let globalData = [];
 
-        let globalData = [];
+    // 1. Listen for THAWMHNAW entries
+    onSnapshot(query(collection(db, "pending_approvals"), where("category", "==", "THAWMHNAW")), (snapshot) => {
+        const listDiv = document.getElementById('display-list');
+        let html = "";
+        globalData = [];
 
-        onSnapshot(query(collection(db, "pending_approvals"), where("category", "==", "THAWMHNAW")), (snapshot) => {
-            const listDiv = document.getElementById('display-list');
-            let html = "";
-            globalData = [];
-
-            snapshot.forEach((record) => {
-                const data = record.data();
-                (data.details || []).forEach((bag, bIdx) => {
-                    const uKey = `${record.id}_${bIdx}`;
-                    globalData.push({ id: record.id, ...data, currentBag: bag, bIdx, uKey });
-                    const lS = JSON.parse(localStorage.getItem(`edit_${uKey}`)) || {};
+        snapshot.forEach((record) => {
+            const data = record.data();
+            (data.details || []).forEach((bag, bIdx) => {
+                const uKey = `${record.id}_${bIdx}`;
+                globalData.push({ id: record.id, ...data, currentBag: bag, bIdx, uKey });
+                const lS = JSON.parse(localStorage.getItem(`edit_${uKey}`)) || {};
+                
+                html += `<div class="bag-card">
+                    <div class="category-header">${data.category}</div>
+                    <span class="label-text">Bag / Consignment (Internal Only)</span>
+                    <input type="text" id="bagNo_${uKey}" value="${lS.bagNo || bag.number}" oninput="window.updateLS('${uKey}','bagNo',this.value)" style="color:var(--accent); font-weight:bold; width:150px; margin-bottom:10px;">`;
+                
+                (bag.items || []).forEach((item, iIdx) => {
+                    const currentImg = lS[`img_${iIdx}`] || item.img;
+                    html += `<div class="item-box">
+                        <div class="item-header">
+                            <div class="img-area">
+                                <img src="${currentImg}" class="item-img" id="img_view_${uKey}_${iIdx}" onclick="window.zoomImg(this.src)">
+                                <div class="cam-btn" onclick="window.triggerCam('${uKey}',${iIdx})"><i class="fa-solid fa-camera"></i></div>
+                            </div>
+                            <div style="flex:1;"><span class="label-text">Item Name</span>
+                            <input type="text" value="${lS[`name_${iIdx}`] || item.name}" oninput="window.updateLS('${uKey}','name_${iIdx}',this.value)"></div>
+                        </div>`;
                     
-                    html += `<div class="bag-card">
-                        <div class="category-header">${data.category}</div>
-                        <span class="label-text">Bag / Consignment</span>
-                        <input type="text" id="bagNo_${uKey}" value="${lS.bagNo || bag.number}" oninput="window.updateLS('${uKey}','bagNo',this.value)" style="color:var(--accent); font-weight:bold; width:150px; margin-bottom:10px;">`;
-                    
-                    (bag.items || []).forEach((item, iIdx) => {
-                        const currentImg = lS[`img_${iIdx}`] || item.img;
-                        html += `<div class="item-box">
-                            <div class="item-header">
-                                <div class="img-area">
-                                    <img src="${currentImg}" class="item-img" id="img_view_${uKey}_${iIdx}" onclick="window.zoomImg(this.src)">
-                                    <div class="cam-btn" onclick="window.triggerCam('${uKey}',${iIdx})"><i class="fa-solid fa-camera"></i></div>
-                                </div>
-                                <div style="flex:1;"><span class="label-text">Item Name</span>
-                                <input type="text" value="${lS[`name_${iIdx}`] || item.name}" oninput="window.updateLS('${uKey}','name_${iIdx}',this.value)"></div>
-                            </div>`;
+                    (item.variations || []).forEach((v, vIdx) => {
+                        const key = `${iIdx}_${vIdx}`;
+                        const q = lS[`q_${key}`] !== undefined ? lS[`q_${key}`] : (v.qty || 0);
+                        const iQ = lS[`i_${key}`] !== undefined ? lS[`i_${key}`] : (v.innerQty || 1);
+                        const price = lS[`p_${key}`] || '';
                         
-                        (item.variations || []).forEach((v, vIdx) => {
-                            const key = `${iIdx}_${vIdx}`;
-                            const q = lS[`q_${key}`] !== undefined ? lS[`q_${key}`] : (v.qty || 0);
-                            const iQ = lS[`i_${key}`] !== undefined ? lS[`i_${key}`] : (v.innerQty || 1);
-                            const price = lS[`p_${key}`] || '';
-                            
-                            html += `<div class="edit-grid">
-                                <div><span class="label-text">Size</span><input type="text" value="${lS[`sz_${key}`] || v.size}" oninput="window.updateLS('${uKey}','sz_${key}',this.value)"></div>
-                                <div><span class="label-text">Qty</span>
-                                    <input type="number" id="q_${uKey}_${key}" value="${q}" oninput="window.liveCalc('${uKey}','${key}','q',this.value)">
-                                    ${q == 0 ? '<span class="mizo-warn">I la dah khat lo</span>' : ''}
-                                </div>
-                                <div><span class="label-text">Unit</span><input type="text" value="${lS[`u_${key}`] || v.unit || 'set'}" oninput="window.updateLS('${uKey}','u_${key}',this.value)"></div>
-                                <div><span class="label-text">Inner</span><input type="number" id="i_${uKey}_${key}" value="${iQ}" oninput="window.liveCalc('${uKey}','${key}','i',this.value)"></div>
-                                <div class="total-box"><span class="label-text">Total Pieces:</span><span class="total-val" id="total_${uKey}_${key}">${q * iQ}</span></div>
-                                <div class="price-group"><span class="label-text">Price</span>
-                                    <input type="number" class="inp-p" value="${price}" oninput="window.updateLS('${uKey}','p_${key}',this.value)">
-                                    ${price === '' ? '<span class="mizo-warn">I la dah khat lo</span>' : ''}
-                                </div>
-                            </div>`;
-                        });
-                        html += `</div>`;
+                        html += `<div class="edit-grid">
+                            <div><span class="label-text">Size</span><input type="text" value="${lS[`sz_${key}`] || v.size}" oninput="window.updateLS('${uKey}','sz_${key}',this.value)"></div>
+                            <div><span class="label-text">Qty</span>
+                                <input type="number" id="q_${uKey}_${key}" value="${q}" oninput="window.liveCalc('${uKey}','${key}','q',this.value)">
+                            </div>
+                            <div><span class="label-text">Unit</span><input type="text" value="${lS[`u_${key}`] || v.unit || 'set'}" oninput="window.updateLS('${uKey}','u_${key}',this.value)"></div>
+                            <div><span class="label-text">Inner</span><input type="number" id="i_${uKey}_${key}" value="${iQ}" oninput="window.liveCalc('${uKey}','${key}','i',this.value)"></div>
+                            <div class="total-box"><span class="label-text">Total Pcs:</span><span class="total-val" id="total_${uKey}_${key}">${q * iQ}</span></div>
+                            <div class="price-group"><span class="label-text">Price</span>
+                                <input type="number" class="inp-p" value="${price}" oninput="window.updateLS('${uKey}','p_${key}',this.value)">
+                            </div>
+                        </div>`;
                     });
                     html += `</div>`;
                 });
+                html += `</div>`;
             });
-            listDiv.innerHTML = html;
-            document.getElementById('autoCalcTrigger').style.display = globalData.length > 0 ? 'flex' : 'none';
         });
+        listDiv.innerHTML = html;
+        document.getElementById('autoCalcTrigger').style.display = globalData.length > 0 ? 'flex' : 'none';
+    });
 
-        const fileIn = document.getElementById('fileIn');
-        window.triggerCam = (uKey, iIdx) => { window.activeImgTarget = { uKey, iIdx }; fileIn.click(); };
-        fileIn.onchange = (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const max = 400; let w = img.width, h = img.height;
-                    if (w > h) { if (w > max) { h *= max / w; w = max; } }
-                    else { if (h > max) { w *= max / h; h = max; } }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.6);
-                    const { uKey, iIdx } = window.activeImgTarget;
-                    window.updateLS(uKey, `img_${iIdx}`, base64);
-                    document.getElementById(`img_view_${uKey}_${iIdx}`).src = base64;
-                    fileIn.value = ""; 
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        };
-
-        window.showSummary = () => {
-            const summaryDate = document.getElementById('summaryDate');
-            const summaryBody = document.getElementById('summaryBody');
-            const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            summaryDate.innerText = "DATE: " + today;
-
-            const consMap = {};
-            globalData.forEach(entry => {
-                const lS = JSON.parse(localStorage.getItem(`edit_${entry.uKey}`)) || {};
-                const cNo = lS.bagNo || entry.currentBag.number;
-                if (!consMap[cNo]) consMap[cNo] = { bagCount: 0, items: {}, grandTotal: 0 };
-                consMap[cNo].bagCount++;
-                entry.currentBag.items.forEach((item, iIdx) => {
-                    const iName = lS[`name_${iIdx}`] || item.name;
-                    if (!consMap[cNo].items[iName]) consMap[cNo].items[iName] = {};
-                    item.variations.forEach((v, vIdx) => {
-                        const key = `${iIdx}_${vIdx}`;
-                        const sz = lS[`sz_${key}`] || v.size;
-                        const qty = parseFloat(lS[`q_${key}`] || v.qty || 0);
-                        const inner = parseFloat(lS[`i_${key}`] || v.innerQty || 1);
-                        const total = qty * inner;
-                        if (!consMap[cNo].items[iName][sz]) consMap[cNo].items[iName][sz] = { qty: 0, totalPcs: 0, unit: lS[`u_${key}`] || v.unit || 'set' };
-                        consMap[cNo].items[iName][sz].qty += qty;
-                        consMap[cNo].items[iName][sz].totalPcs += total;
-                        consMap[cNo].grandTotal += total;
-                    });
+    // 2. The Calculator Snapshot Logic
+    const getCalculatorData = () => {
+        const consMap = {};
+        globalData.forEach(entry => {
+            const lS = JSON.parse(localStorage.getItem(`edit_${entry.uKey}`)) || {};
+            const cNo = lS.bagNo || entry.currentBag.number;
+            if (!consMap[cNo]) consMap[cNo] = { bagCount: 0, items: {}, grandTotal: 0 };
+            consMap[cNo].bagCount++;
+            entry.currentBag.items.forEach((item, iIdx) => {
+                const iName = lS[`name_${iIdx}`] || item.name;
+                if (!consMap[cNo].items[iName]) consMap[cNo].items[iName] = {};
+                item.variations.forEach((v, vIdx) => {
+                    const key = `${iIdx}_${vIdx}`;
+                    const sz = lS[`sz_${key}`] || v.size;
+                    const qty = parseFloat(lS[`q_${key}`] || v.qty || 0);
+                    const inner = parseFloat(lS[`i_${key}`] || v.innerQty || 1);
+                    const total = qty * inner;
+                    if (!consMap[cNo].items[iName][sz]) consMap[cNo].items[iName][sz] = { qty: 0, totalPcs: 0, unit: lS[`u_${key}`] || v.unit || 'set' };
+                    consMap[cNo].items[iName][sz].qty += qty;
+                    consMap[cNo].items[iName][sz].totalPcs += total;
+                    consMap[cNo].grandTotal += total;
                 });
             });
+        });
+        return consMap;
+    };
 
-            let sHtml = "";
-            for (const [cNo, data] of Object.entries(consMap)) {
-                sHtml += `<div style="color:var(--accent); font-size:16px; border-bottom:1px solid #333; margin-top:15px; display:flex; justify-content:space-between;">
-                    <span>Consignment: ${cNo}</span>
-                    <span style="background:var(--accent); color:#000; padding:0 8px; border-radius:4px; font-weight:bold; font-size:12px;">${data.bagCount} BAGS</span>
-                </div>`;
-                for (const [iName, sizes] of Object.entries(data.items)) {
-                    sHtml += `<div style="color:#fff; margin-top:5px; font-weight:bold;">${iName}</div>`;
-                    for (const [sz, info] of Object.entries(sizes)) {
-                        sHtml += `<div style="font-size:12px; color:#aaa; padding-left:10px;">- Size ${sz}: ${info.qty} ${info.unit} = ${info.totalPcs} pcs</div>`;
-                    }
-                }
-                sHtml += `<div style="text-align:right; color:var(--accent); font-weight:bold; margin-top:5px;">Total: ${data.grandTotal} pcs</div>`;
-            }
-            summaryBody.innerHTML = sHtml || "No Data";
-            document.getElementById('summaryModal').style.display = 'block';
-        };
-
+    // 3. The Double-Push Upload Function
         window.uploadAll = async () => {
-            const btn = document.getElementById('uploadAllBtn');
-            btn.disabled = true; btn.innerHTML = "UPLOADING...";
-            const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            try {
-                for (const entry of globalData) {
-                    const lS = JSON.parse(localStorage.getItem(`edit_${entry.uKey}`)) || {};
-                    await addDoc(collection(db, "inventory_item"), { ...lS, category: "THAWMHNAW", date: dateStr, timestamp: serverTimestamp() });
-                    localStorage.removeItem(`edit_${entry.uKey}`);
-                }
-                const ids = [...new Set(globalData.map(g => g.id))];
-                for (const id of ids) await deleteDoc(doc(db, "pending_approvals", id));
-                alert("Upload Success!"); location.reload();
-            } catch (e) { alert("Error"); btn.disabled = false; btn.innerHTML = "UPLOAD ALL"; }
-        };
+        const btn = document.getElementById('uploadAllBtn');
+        
+        // --- 1. THE GATEKEEPER (VALIDATION) ---
+        let isValid = true;
+        globalData.forEach(entry => {
+            const lS = JSON.parse(localStorage.getItem(`edit_${entry.uKey}`)) || {};
+            entry.currentBag.items.forEach((item, iIdx) => {
+                item.variations.forEach((v, vIdx) => {
+                    const key = `${iIdx}_${vIdx}`;
+                    const q = lS[`q_${key}`] !== undefined ? lS[`q_${key}`] : v.qty;
+                    const p = lS[`p_${key}`] || '';
+                    
+                    if (!p || p === '' || q == 0) {
+                        isValid = false;
+                    }
+                });
+            });
+        });
 
-        window.updateLS = (uK, k, v) => {
-            const d = JSON.parse(localStorage.getItem(`edit_${uK}`)) || {};
-            d[k] = v; localStorage.setItem(`edit_${uK}`, JSON.stringify(d));
-            // Trigger UI refresh for warnings if needed, or simply let the user see them on next render
-        };
-        window.liveCalc = (uK, k, t, v) => {
-            window.updateLS(uK, `${t}_${k}`, v);
-            const q = document.getElementById(`q_${uK}_${k}`).value || 0;
-            const i = document.getElementById(`i_${uK}_${k}`).value || 1;
-            document.getElementById(`total_${uK}_${k}`).innerText = q * i;
-        };
-        window.zoomImg = (src) => { document.getElementById('zoomedImg').src = src; document.getElementById('zoomOverlay').style.display = 'flex'; };
-    </script>
+        if (!isValid) {
+            alert("Hriattirna: Price emaw Qty i la dah khat lo! Khawngaihin enfiah leh hmasa rawh.");
+            return; // Stops the function here
+        }
+
+        // --- 2. THE UPLOAD LOGIC (Only runs if isValid is true) ---
+        btn.disabled = true; btn.innerHTML = "DAH LUH MEK A NI...";
+        
+        const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+        try {
+            const fullSummary = getCalculatorData();
+            await addDoc(collection(db, "history_data"), {
+                category: "THAWMHNAW",
+                date: dateStr,
+                time: timeStr,
+                snapshot: fullSummary,
+                timestamp: serverTimestamp()
+            });
+
+            for (const entry of globalData) {
+                const lS = JSON.parse(localStorage.getItem(`edit_${entry.uKey}`)) || {};
+                const cleanItemData = {
+                    category: "THAWMHNAW",
+                    date: dateStr,
+                    timestamp: serverTimestamp(),
+                    details: entry.currentBag.items.map((item, iIdx) => ({
+                        name: lS[`name_${iIdx}`] || item.name,
+                        img: lS[`img_${iIdx}`] || item.img,
+                        variations: item.variations.map((v, vIdx) => {
+                            const key = `${iIdx}_${vIdx}`;
+                            const q = parseFloat(lS[`q_${key}`] !== undefined ? lS[`q_${key}`] : (v.qty || 0));
+                            const iQ = parseFloat(lS[`i_${key}`] !== undefined ? lS[`i_${key}`] : (v.innerQty || 1));
+                            return {
+                                size: lS[`sz_${key}`] || v.size,
+                                stock: q * iQ,
+                                price: lS[`p_${key}`],
+                                unit: lS[`u_${key}`] || v.unit || 'set'
+                            };
+                        })
+                    }))
+                };
+
+                await addDoc(collection(db, "inventory_item"), cleanItemData);
+                localStorage.removeItem(`edit_${entry.uKey}`);
+            }
+
+            const ids = [...new Set(globalData.map(g => g.id))];
+            for (const id of ids) await deleteDoc(doc(db, "pending_approvals", id));
+
+            alert("Hlawhtling takin i dah lut ta e!");
+            location.reload();
+        } catch (e) { 
+            console.error(e);
+            alert("A harsa tlat, i internet check la, han try nawn leh teh."); 
+            btn.disabled = false; btn.innerHTML = "UPLOAD ALL"; 
+        }
+    };
+
+    // Standard UI Helpers
+    window.updateLS = (uK, k, v) => {
+        const d = JSON.parse(localStorage.getItem(`edit_${uK}`)) || {};
+        d[k] = v; localStorage.setItem(`edit_${uK}`, JSON.stringify(d));
+    };
+    window.liveCalc = (uK, k, t, v) => {
+        window.updateLS(uK, `${t}_${k}`, v);
+        const q = document.getElementById(`q_${uK}_${k}`).value || 0;
+        const i = document.getElementById(`i_${uK}_${k}`).value || 1;
+        document.getElementById(`total_${uK}_${k}`).innerText = q * i;
+    };
+    window.zoomImg = (src) => { 
+        document.getElementById('zoomedImg').src = src; 
+        document.getElementById('zoomOverlay').style.display = 'flex'; 
+    };
+    window.showSummary = () => {
+        const summaryBody = document.getElementById('summaryBody');
+        const consMap = getCalculatorData();
+        let sHtml = "";
+        for (const [cNo, data] of Object.entries(consMap)) {
+            sHtml += `<div style="color:var(--accent); font-size:16px; border-bottom:1px solid #333; margin-top:15px; display:flex; justify-content:space-between;">
+                <span>Consignment: ${cNo}</span>
+                <span style="background:var(--accent); color:#000; padding:0 8px; border-radius:4px; font-weight:bold; font-size:12px;">${data.bagCount} BAGS</span>
+            </div>`;
+            for (const [iName, sizes] of Object.entries(data.items)) {
+                sHtml += `<div style="color:#fff; margin-top:5px; font-weight:bold;">${iName}</div>`;
+                for (const [sz, info] of Object.entries(sizes)) {
+                    sHtml += `<div style="font-size:12px; color:#aaa; padding-left:10px;">- Size ${sz}: ${info.qty} ${info.unit} = ${info.totalPcs} pcs</div>`;
+                }
+            }
+            sHtml += `<div style="text-align:right; color:var(--accent); font-weight:bold; margin-top:5px;">Total: ${data.grandTotal} pcs</div>`;
+        }
+        summaryBody.innerHTML = sHtml || "No Data";
+        document.getElementById('summaryModal').style.display = 'block';
+    };
+</script>
+
 </body>
 </html>
