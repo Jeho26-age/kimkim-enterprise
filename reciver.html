@@ -81,6 +81,22 @@
                 const uKey = `${record.id}_${bIdx}`;
                 globalData.push({ id: record.id, ...data, currentBag: bag, bIdx, uKey });
                 const lS = JSON.parse(localStorage.getItem(`edit_${uKey}`)) || {};
+                window.triggerCam = (uKey, iIdx) => {
+    const fileIn = document.getElementById('fileIn');
+    fileIn.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const base64 = event.target.result;
+            document.getElementById(`img_view_${uKey}_${iIdx}`).src = base64;
+            window.updateLS(uKey, `img_${iIdx}`, base64);
+        };
+        reader.readAsDataURL(file);
+    };
+    fileIn.click();
+};
+
                 
                 html += `<div class="bag-card">
                     <div class="category-header">${data.category}</div>
@@ -210,11 +226,14 @@
                             const q = parseFloat(lS[`q_${key}`] !== undefined ? lS[`q_${key}`] : (v.qty || 0));
                             const iQ = parseFloat(lS[`i_${key}`] !== undefined ? lS[`i_${key}`] : (v.innerQty || 1));
                             return {
-                                size: lS[`sz_${key}`] || v.size,
-                                stock: q * iQ,
-                                price: lS[`p_${key}`],
-                                unit: lS[`u_${key}`] || v.unit || 'set'
-                            };
+    size: lS[`sz_${key}`] || v.size,
+    qty: q,
+    inner: iQ,
+    stock: q * iQ,
+    price: lS[`p_${key}`],
+    unit: lS[`u_${key}`] || v.unit || 'set'
+};
+
                         })
                     }))
                 };
