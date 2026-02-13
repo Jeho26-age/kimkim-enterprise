@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KimKim | Bulk History</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg: #000; --card: #111; --accent: #4ade80; --border: #222; --text: #fff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 100px; }
+        
+        .header-area { position: sticky; top: 0; background: var(--bg); z-index: 1000; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .search-box { width: 100%; background: #111; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; font-size: 14px; outline: none; box-sizing: border-box; }
+        
+        .history-card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-top: 20px; border-left: 4px solid var(--accent); }
+        .card-id { color: var(--accent); font-weight: bold; font-size: 16px; text-transform: uppercase; }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; background: #080808; padding: 10px; border-radius: 8px; text-align: center; margin-top:10px; }
+        .stat-val { color: #fff; font-weight: bold; font-size: 14px; display: block; }
+        .stat-lbl { color: #555; font-size: 9px; text-transform: uppercase; }
+
+        #calcBtn { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #000; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; z-index: 2000; border: none; box-shadow: 0 0 15px var(--accent); }
+
+        #calcModal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; z-index:3000; padding:20px; box-sizing: border-box; }
+        .modal-content { background:#111; border: 1px solid var(--accent); border-radius:25px; padding:20px; max-width:400px; margin: 5% auto; text-align: center; }
+        
+        .calc-input { width: 100%; background: #000; border: 1px solid #444; color: var(--accent); padding: 15px; border-radius: 12px; margin: 15px 0; font-size: 18px; text-align: center; font-weight: bold; outline: none; box-sizing: border-box; }
+        
+        .res-box { text-align: left; background: #080808; padding: 15px; border-radius: 12px; margin-top: 10px; border: 1px solid #222; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+        .total-row b { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="header-area">
+        <h2 style="margin:0; color:var(--accent);">BULK HISTORY</h2>
+        <input type="text" id="searchInput" class="search-box" placeholder="Filter list..." oninput="filterHistory()">
+        <select id="timeFilter" style="width:100%; padding:12px; background:#111; color:var(--accent); border:1px solid #333; border-radius:12px; margin-top:10px;" onchange="fetchHistory()">
+            <option value="7">Last 7 Days</option>
+            <option value="30">Last 30 Days</option>
+            <option value="all">All Time</option>
+        </select>
+    </div>
+
+    <div id="history-list"></div>
+
+    <button id="calcBtn" onclick="openCalculator()"><i class="fa-solid fa-calculator"></i></button>
+
+    <div id="calcModal">
+        <div class="modal-content">
+            <h3 style="color:var(--accent); margin:0;">HISTORY CALCULATOR</h3>
+            <input type="text" id="idCalcInput" class="calc-input" placeholder="TYPE CARD ID (e.g. Mumbai)" oninput="runCalculation()">
+            
+            <div id="calcResults" class="res-box">
+                </div>
+
+            <button onclick="closeCalculator()" style="width:100%; background:var(--accent); color:#000; border:none; padding:15px; border-radius:12px; margin-top:20px; font-weight:bold;">CLOSE</button>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+        authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+        projectId: "kimkimenterprise-516c4",
+        storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+        messagingSenderId: "782456699398",
+        appId: "1:782456699398:web:c069d267ea8d62b197e187"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let masterRecords = [];
+
+    window.fetchHistory = async () => {
+        const range = document.getElementById('timeFilter').value;
+        let q = query(collection(db, "bulk_history"), orderBy("timestamp", "desc"));
+        
+        if (range !== 'all') {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - parseInt(range));
+            q = query(collection(db, "bulk_history"), where("timestamp", ">=", Timestamp.fromDate(cutoff)), orderBy("timestamp", "desc"));
+        }
+
+        const snap = await getDocs(q);
+        masterRecords = [];
+        let html = "";
+
+        snap.forEach(doc => {
+            const data = doc.data();
+            masterRecords.push(data);
+            const totals = getTotals(data.details);
+            html += `
+            <div class="history-card" data-search="${(data.cardID || '').toLowerCase()}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="card-id">${data.cardID || 'NO ID'}</span>
+                    <span style="font-size:10px; color:#555;">${data.processedDate || ''}</span>
+                </div>
+                <div class="stat-grid">
+                    <div><span class="stat-val">${totals.b}</span><span class="stat-lbl">Bags</span></div>
+                    <div><span class="stat-val">${totals.bx}</span><span class="stat-lbl">Boxes</span></div>
+                    <div><span class="stat-val">${totals.p}</span><span class="stat-lbl">Plastics</span></div>
+                </div>
+            </div>`;
+        });
+        document.getElementById('history-list').innerHTML = html || "<p style='text-align:center; padding:20px; color:#555;'>No records found.</p>";
+    };
+
+    function getTotals(details) {
+        let b = 0, bx = 0, p = 0;
+        if(details) {
+            (details.bags || []).forEach(i => b += (parseFloat(i.qty) || 0));
+            (details.boxes || []).forEach(i => bx += (parseFloat(i.qty) || 0));
+            (details.plastics || []).forEach(i => p += (parseFloat(i.qty) || 0));
+        }
+        return { b, bx, p };
+    }
+
+    window.runCalculation = () => {
+        // We trim spaces and lowercase for a perfect match
+        const searchInput = document.getElementById('idCalcInput').value.trim().toLowerCase();
+        
+        // Combined Totals (All items in master list)
+        let cB = 0, cBx = 0, cP = 0;
+        
+        // Search Totals (Filtered items)
+        let sB = 0, sBx = 0, sP = 0, matchCount = 0;
+
+        masterRecords.forEach(rec => {
+            const stats = getTotals(rec.details);
+            const cardId = (rec.cardID || "").trim().toLowerCase();
+
+            // Always add to combined
+            cB += stats.b; cBx += stats.bx; cP += stats.p;
+
+            // Only add to search if it matches
+            if (searchInput !== "" && cardId === searchInput) {
+                sB += stats.b; sBx += stats.bx; sP += stats.p;
+                matchCount++;
+            }
+        });
+
+        let resultsHTML = `
+            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                <span style="font-size:10px; color:#666; display:block;">GRAND TOTAL (ALL CARDS)</span>
+                <div class="total-row">Total Goods: <b>${cB + cBx + cP}</b></div>
+            </div>
+        `;
+
+        if (searchInput !== "") {
+            if (matchCount > 0) {
+                resultsHTML += `
+                    <span style="font-size:10px; color:var(--accent); display:block;">SPECIFIC ID: ${searchInput.toUpperCase()}</span>
+                    <div class="total-row">Matches Found: <b>${matchCount}</b></div>
+                    <div class="total-row">Bags: <b>${sB}</b></div>
+                    <div class="total-row">Boxes: <b>${sBx}</b></div>
+                    <div class="total-row">Plastics: <b>${sP}</b></div>
+                    <div class="total-row" style="margin-top:5px; font-size:18px; border-top:1px solid #222; padding-top:5px;">
+                        ID TOTAL: <b>${sB + sBx + sP}</b>
+                    </div>
+                `;
+            } else {
+                resultsHTML += `<p style="text-align:center; color:red; font-size:12px;">ID "${searchInput}" Not Found</p>`;
+            }
+        } else {
+            resultsHTML += `<p style="text-align:center; color:#555; font-size:11px;">Type an ID to filter totals</p>`;
+        }
+
+        document.getElementById('calcResults').innerHTML = resultsHTML;
+    };
+
+    window.filterHistory = () => {
+        const val = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('.history-card').forEach(card => {
+            card.style.display = card.dataset.search.includes(val) ? 'block' : 'none';
+        });
+    };
+
+    window.openCalculator = () => { 
+        document.getElementById('calcModal').style.display = 'block'; 
+        runCalculation(); 
+    };
+    
+    window.closeCalculator = () => { document.getElementById('calcModal').style.display = 'none'; };
+    
+    window.onload = fetchHistory;
+</script>
+</body>
+</html>

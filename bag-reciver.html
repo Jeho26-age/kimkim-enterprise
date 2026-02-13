@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Hub | Bulk Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg: #000; --card: #111; --accent: #4ade80; --border: #222; --text: #fff; --error: #ff4d4d; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 120px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .header h2 { color: var(--accent); margin: 0; font-size: 18px; letter-spacing: 1px; }
+
+        .arrival-card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 30px; border-top: 5px solid var(--accent); position: relative; }
+        
+        /* THE SPECIFIC TOP BOXES */
+        .top-input-group { background: #080808; padding: 12px; border-radius: 10px; border: 1px solid #222; margin-bottom: 15px; }
+        .label-mini { font-size: 10px; color: var(--accent); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        
+        .edit-input { background: #000; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 14px; margin-bottom: 10px; }
+        .edit-input:focus { border-color: var(--accent); outline: none; }
+        
+        /* TABLE STYLING */
+        .type-section { margin-top: 15px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table td { padding: 4px; }
+
+        /* CALCULATOR & NAV */
+        #calcTrigger { position: fixed; bottom: 100px; right: 20px; background: var(--accent); color: #000; width: 65px; height: 65px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 28px; z-index: 5000; border: 4px solid #000; box-shadow: 0 0 20px rgba(74, 222, 128, 0.4); }
+        #summaryModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: none; padding: 20px; }
+        .summary-content { background: #111; border: 1px solid var(--accent); border-radius: 20px; padding: 25px; max-width: 400px; margin: 10% auto; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #080808; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #222; }
+        .btn-upload { width: 100%; background: var(--accent); color: #000; border: none; padding: 16px; border-radius: 12px; font-weight: bold; margin-top: 15px; font-size: 14px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2><i class="fa-solid fa-file-pen"></i> BULK ARRIVAL EDITOR</h2>
+        <span id="count-badge" style="background:var(--accent); color:black; padding:2px 10px; border-radius:10px; font-weight:bold;">0</span>
+    </div>
+
+    <div id="arrival-list"></div>
+
+    <div id="calcTrigger" onclick="window.showGrandSummary()"><i class="fa-solid fa-calculator"></i></div>
+
+    <div id="summaryModal" onclick="this.style.display='none'">
+        <div class="summary-content" onclick="event.stopPropagation()">
+            <h2 style="color:var(--accent); text-align:center;">SESSION TOTAL</h2>
+            <div id="summaryBody" style="font-size: 18px;"></div>
+            <button onclick="document.getElementById('summaryModal').style.display='none'" style="width:100%; background:red; color:white; border:none; padding:15px; border-radius:10px; margin-top:20px; font-weight:bold;">CLOSE</button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button onclick="location.href='bag-history.html'" style="background:none; border:none; color:#777;"><i class="fa-solid fa-clock-rotate-left" style="font-size:20px;"></i><br><small>HISTORY</small></button>
+        <button onclick="location.reload()" style="background:none; border:none; color:#777;"><i class="fa-solid fa-rotate" style="font-size:20px;"></i><br><small>REFRESH</small></button>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy, deleteDoc, doc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+        authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+        projectId: "kimkimenterprise-516c4",
+        storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+        messagingSenderId: "782456699398",
+        appId: "1:782456699398:web:c069d267ea8d62b197e187"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    onSnapshot(query(collection(db, "bulk_arrivals"), orderBy("timestamp", "desc")), (snapshot) => {
+        const listDiv = document.getElementById('arrival-list');
+        document.getElementById('count-badge').innerText = snapshot.size;
+        
+        let html = "";
+        snapshot.forEach((record) => {
+            const data = record.data();
+            const id = record.id;
+            const det = data.details || {};
+
+            html += `
+            <div class="arrival-card" id="card_${id}">
+                <div class="top-input-group">
+                    <span class="label-mini">ID / CARD LABEL</span>
+                    <input type="text" class="edit-input" id="cardLabel_${id}" value="${data.cardID || ''}" placeholder="Enter Card ID (e.g. TRUCK-01)">
+                    
+                    <span class="label-mini">KUDAM / STORE ROOM</span>
+                    <input type="text" class="edit-input" id="kudam_${id}" value="${data.kudamName || ''}">
+                </div>
+
+                <div style="font-size:11px; color:#555; margin-bottom:10px;">Submitted by: ${data.staffName} | ${data.submittedAt}</div>
+
+                ${renderTable(id, "bags", "Bags (Ipot)", det.bags)}
+                ${renderTable(id, "boxes", "Boxes", det.boxes)}
+                ${renderTable(id, "plastics", "Plastics", det.plastics)}
+
+                <button class="btn-upload" onclick="window.processUpload('${id}')">UPLOAD TO BULK_HISTORY</button>
+            </div>`;
+        });
+        listDiv.innerHTML = html || "<p style='text-align:center; padding:50px; color:#555;'>No arrivals pending.</p>";
+        document.getElementById('calcTrigger').style.display = snapshot.empty ? 'none' : 'flex';
+    });
+
+    function renderTable(docId, type, label, items) {
+        if (!items || items.length === 0) return "";
+        let rows = items.map((item, idx) => `
+            <tr>
+                <td><input type="text" class="edit-input" data-doc="${docId}" data-type="${type}" data-idx="${idx}" data-field="id" value="${item.id || ''}"></td>
+                <td width="90"><input type="number" class="edit-input" data-doc="${docId}" data-type="${type}" data-idx="${idx}" data-field="qty" value="${item.qty || 0}"></td>
+            </tr>
+        `).join('');
+        return `<div class="type-section"><span class="label-mini">${label}</span><table class="data-table"><tbody>${rows}</tbody></table></div>`;
+    }
+
+    window.showGrandSummary = () => {
+        let b = 0, bx = 0, p = 0;
+        document.querySelectorAll('input[data-field="qty"]').forEach(inp => {
+            const v = parseFloat(inp.value) || 0;
+            if(inp.dataset.type === 'bags') b += v;
+            if(inp.dataset.type === 'boxes') bx += v;
+            if(inp.dataset.type === 'plastics') p += v;
+        });
+        document.getElementById('summaryBody').innerHTML = `<p>Bags: ${b}</p><p>Boxes: ${bx}</p><p>Plastics: ${p}</p><hr><p><b>TOTAL: ${b+bx+p}</b></p>`;
+        document.getElementById('summaryModal').style.display = 'block';
+    };
+
+    window.processUpload = async (docId) => {
+        const btn = document.querySelector(`#card_${docId} .btn-upload`);
+        btn.innerText = "UPLOADING..."; btn.disabled = true;
+
+        try {
+            const cardID = document.getElementById(`cardLabel_${docId}`).value;
+            const kudam = document.getElementById(`kudam_${docId}`).value;
+            const details = { bags: [], boxes: [], plastics: [] };
+
+            document.querySelectorAll(`input[data-doc="${docId}"]`).forEach(inp => {
+                const { type, idx, field } = inp.dataset;
+                if (!details[type][idx]) details[type][idx] = {};
+                details[type][idx][field] = field === 'qty' ? parseFloat(inp.value) || 0 : inp.value;
+            });
+
+            await addDoc(collection(db, "bulk_history"), {
+                cardID, kudamName: kudam, details,
+                timestamp: serverTimestamp(),
+                processedDate: new Date().toLocaleDateString('en-GB')
+            });
+
+            await deleteDoc(doc(db, "bulk_arrivals", docId));
+            alert("Moved to Bulk History!");
+        } catch (e) { alert("Error: " + e.message); btn.innerText = "UPLOAD TO BULK_HISTORY"; btn.disabled = false; }
+    };
+</script>
+</body>
+</html>

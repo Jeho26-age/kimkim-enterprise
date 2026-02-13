@@ -198,7 +198,7 @@
             document.getElementById('loader').style.display = "flex";
 
             try {
-                await addDoc(collection(db, "pending_approvals"), {
+                await addDoc(collection(db, "bulk_arrivals"), {
                     category: "BULK ARRIVAL",
                     staffName: draft.staff || "N/A",
                     kudamName: draft.kudam || "N/A",
