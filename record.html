@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thawmhnaw Recording | KimKim</title>
+    <style>
+        :root {
+            --bg-dark: #000000; --card-dark: #111111; --border: #222;
+            --accent-green: #4ade80; --text-gray: #888;
+        }
+        body { 
+            margin: 0; background: var(--bg-dark); color: white; 
+            font-family: 'Segoe UI', sans-serif; padding: 15px; padding-bottom: 110px;
+            overflow-x: hidden;
+        }
+        
+        .category-header { text-align: center; background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid var(--accent-green); margin-bottom: 15px; }
+        input, select { width: 100%; background: var(--card-dark); border: 1px solid var(--border); padding: 12px; border-radius: 10px; color: white; box-sizing: border-box; font-size: 14px; outline: none; margin-bottom: 5px; }
+        
+        .consignment-box { border: 1px solid #333; border-radius: 20px; padding: 15px; margin-bottom: 25px; background: #080808; position: relative; }
+        .item-section { background: #161616; border-radius: 15px; padding: 15px; margin-top: 15px; border-left: 3px solid var(--accent-green); position: relative; }
+        
+        #calcTrigger {
+            position: fixed; bottom: 100px; right: 20px; 
+            width: 70px; height: 70px; border-radius: 0px; 
+            border: 2px solid var(--accent-green); 
+            background-image: url('sawmte.jpg'); 
+            background-size: cover; background-position: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8); 
+            z-index: 1000; display: none; cursor: move;
+            touch-action: none;
+        }
+
+        #calcModal, #mizoAlertModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; justify-content: center; align-items: center; }
+        .modal-content { background: #111; border: 2px solid var(--accent-green); border-radius: 20px; padding: 20px; overflow-y: auto; max-height: 80vh; width: 100%; }
+        
+        .alert-card { background: #111; border: 2px solid var(--accent-green); border-radius: 25px; padding: 30px; text-align: center; width: 90%; max-width: 400px; }
+        .alert-msg { font-size: 18px; margin-bottom: 25px; }
+        .alert-btn { background: var(--accent-green); color: black; border: none; padding: 15px 40px; border-radius: 12px; font-weight: bold; }
+
+        .size-qty-row { display: flex; flex-direction: column; gap: 8px; background: #000; padding: 10px; border-radius: 12px; margin-top: 8px; border: 1px solid #222; }
+        .row-bottom { display: grid; grid-template-columns: 1fr 60px 80px 50px; gap: 5px; align-items: end; }
+        .row-result { color: var(--accent-green); font-weight: bold; font-size: 11px; text-align: right; }
+        
+        .preview-img { width: 100%; height: 250px; object-fit: contain; background: #000; border-radius: 10px; margin-bottom: 10px; display: none; border: 1px solid #333; }
+        .photo-btn { background: #222; border: 1px dashed #555; margin-bottom: 10px; cursor: pointer; padding: 12px; color: white; border-radius: 10px; width: 100%; }
+        .photo-btn.has-img { border-color: var(--accent-green); color: var(--accent-green); border-style: solid; }
+
+        .btn-plus { background: #111; border: 1px solid #333; color: var(--accent-green); border-radius: 8px; padding: 12px; font-weight: bold; margin-top: 10px; width: 100%; }
+        .btn-save { position: fixed; bottom: 15px; left: 15px; right: 15px; background: var(--accent-green); color: black; border: none; padding: 20px; border-radius: 15px; font-weight: bold; font-size: 18px; z-index: 100; }
+        .hidden-size { display: none; }
+
+        /* Summary Styling */
+        .summary-bag-group { border-bottom: 1px solid #333; padding: 15px 0; }
+        .summary-bag-title { color: var(--accent-green); font-size: 18px; display: block; margin-bottom: 5px; }
+        .summary-bag-count { color: #888; font-size: 12px; margin-bottom: 10px; display: block; }
+        .summary-item-line { margin-left: 15px; font-size: 14px; margin-bottom: 3px; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+    <div class="category-header"><span>THAWMHNAW RECORDING</span></div>
+
+<div id="current-date" style="text-align: center; color: var(--accent-green); font-size: 14px; margin-bottom: 15px; font-weight: bold; opacity: 0.8;"></div>
+
+<div id="currentDateDisplay" style="text-align: center; color: var(--text-gray); font-size: 14px; margin-bottom: 10px; font-weight: bold;"></div>
+
+    <div class="staff-section">
+        <input type="text" id="globalStaff" placeholder="I hming ziak rawh" oninput="runCalculations()">
+    </div>
+
+    <div id="consignment-wrapper"></div>
+    <button class="btn-plus" onclick="addConsignment()">+ Add New Consignment Bag</button>
+
+    <div id="calcTrigger" onclick="showModal()"></div>
+
+    <div id="calcModal">
+        <div class="modal-content" id="modalData"></div>
+        <button class="btn-plus" style="background:var(--accent-green); color:black; margin-top:15px;" onclick="hideModal()">CLOSE</button></button>
+    </div>
+
+    <div id="mizoAlertModal">
+        <div class="alert-card">
+            <div id="mizoAlertText" class="alert-msg"></div>
+            <button class="alert-btn" onclick="closeMizoAlert()">OKAY LEH</button>
+        </div>
+    </div>
+
+    <button class="btn-save" onclick="submitToAdmin()">SEND DATA</button>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+
+        window.mizoAlert = (text) => {
+            document.getElementById('mizoAlertText').innerText = text;
+            document.getElementById('mizoAlertModal').style.display = 'flex';
+        };
+        window.closeMizoAlert = () => { document.getElementById('mizoAlertModal').style.display = 'none'; };
+
+        // --- DRAG LOGIC ---
+        const dragItem = document.getElementById("calcTrigger");
+        let active = false, currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+        const dragStart = (e) => {
+            initialX = (e.type === "touchstart" ? e.touches[0].clientX : e.clientX) - xOffset;
+            initialY = (e.type === "touchstart" ? e.touches[0].clientY : e.clientY) - yOffset;
+            if (e.target === dragItem) active = true;
+        };
+        const dragEnd = () => { active = false; };
+        const drag = (e) => {
+            if (active) {
+                e.preventDefault();
+                currentX = (e.type === "touchmove" ? e.touches[0].clientX : e.clientX) - initialX;
+                currentY = (e.type === "touchmove" ? e.touches[0].clientY : e.clientY) - initialY;
+                xOffset = currentX; yOffset = currentY;
+                dragItem.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+            }
+        };
+        document.addEventListener("touchstart", dragStart, false);
+        document.addEventListener("touchend", dragEnd, false);
+        document.addEventListener("touchmove", drag, false);
+
+        // --- CORE FUNCTIONS ---
+        window.addConsignment = (data = null) => {
+            const cId = data?.tempId || Date.now() + Math.random();
+            document.getElementById('consignment-wrapper').insertAdjacentHTML('beforeend', `
+                <div class="consignment-box">
+                    <button style="float:right; color:red; border:none; background:none;" onclick="this.parentElement.remove(); runCalculations();">REMOVE</button>
+                    <label style="font-size:10px; color:#888;">CONSIGNMENT BAG #</label>
+                    <input type="text" class="c-number" placeholder="Enter Bag ID" value="${data?.number || ''}" oninput="runCalculations()">
+                    <div id="items-${cId}"></div>
+                    <button class="btn-plus" style="font-size:12px" onclick="addItem('${cId}')">+ Add Item</button>
+                </div>
+            `);
+            if(data?.items) data.items.forEach(i => addItem(cId, i)); else addItem(cId);
+        };
+
+        window.addItem = (cId, data = null) => {
+            const iId = data?.tempId || Math.random().toString(36).substr(2, 9);
+            document.getElementById(`items-${cId}`).insertAdjacentHTML('beforeend', `
+                <div class="item-section">
+                    <button style="float:right; color:red; border:none; background:none;" onclick="this.parentElement.remove(); runCalculations();">×</button>
+                    <img id="prev-${iId}" class="preview-img" src="${data?.img || ''}" style="${data?.img ? 'display:block' : ''}">
+                    <input type="file" accept="image/*" id="file-${iId}" style="display:none" onchange="previewImg('${iId}')">
+                    <button id="pbtn-${iId}" class="photo-btn ${data?.img ? 'has-img' : ''}" onclick="document.getElementById('file-${iId}').click()">🖼️ ITEM PHOTO</button>
+                    <input type="text" class="i-name" placeholder="Item Name" value="${data?.name || ''}" oninput="runCalculations()">
+                    <div id="sq-${iId}"></div>
+                    <button class="btn-plus" style="font-size:11px; background:#222;" onclick="addSizeQty('${iId}')">+ Size Detail</button>
+                </div>
+            `);
+            if(data?.variations) data.variations.forEach(v => addSizeQty(iId, v)); else addSizeQty(iId);
+        };
+
+        window.addSizeQty = (iId, data = null) => {
+            const sqId = Math.random().toString(36).substr(2, 5);
+            const isFree = data ? (data.size === "Free Size") : true;
+            const html = `
+                <div class="size-qty-row">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 30px; gap:8px;">
+                        <select class="s-type" onchange="toggleSize('${sqId}', this.value); runCalculations();">
+                            <option value="free" ${isFree?'selected':''}>Free Size</option>
+                            <option value="manual" ${!isFree?'selected':''}>Size awm</option>
+                        </select>
+                        <input type="text" id="size-${sqId}" class="s-val ${isFree?'hidden-size':''}" placeholder="M, L..." value="${isFree?'':data.size}" oninput="runCalculations()">
+                        <button onclick="this.parentElement.parentElement.remove(); runCalculations();" style="color:red; background:none; border:none;">×</button>
+                    </div>
+                    <div class="row-bottom">
+                        <select class="s-unit" onchange="runCalculations()"><option value="set" ${data?.unit==='set'?'selected':''}>Set</option><option value="box" ${data?.unit==='box'?'selected':''}>Box</option></select>
+                        <input type="number" class="s-qty" placeholder="Amt" value="${data?.qty || ''}" oninput="runCalculations()">
+                        <input type="number" class="s-inner" placeholder="Pcs" value="${data?.innerQty || ''}" oninput="runCalculations()">
+                        <div class="row-result">0</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById(`sq-${iId}`).insertAdjacentHTML('beforeend', html);
+            runCalculations();
+        };
+
+        window.toggleSize = (id, val) => { document.getElementById(`size-${id}`).className = (val === 'manual') ? 's-val' : 's-val hidden-size'; };
+
+        window.previewImg = (id) => {
+            const file = document.getElementById(`file-${id}`).files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 400;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById(`prev-${id}`).src = compressed;
+                    document.getElementById(`prev-${id}`).style.display = "block";
+                    document.getElementById(`pbtn-${id}`).classList.add('has-img');
+                    runCalculations();
+                };
+            };
+        };
+
+        window.runCalculations = () => {
+    let groups = {}, hasAnyId = false, fullDraft = { staff: document.getElementById('globalStaff').value, bags: [] };
+    
+    document.querySelectorAll('.consignment-box').forEach(bagBox => {
+        const bId = bagBox.querySelector('.c-number').value.trim() || "??";
+        if(bId !== "??") hasAnyId = true;
+        let bagData = { number: bId, items: [] };
+
+        if(!groups[bId]) groups[bId] = { bagCount: 0, items: {}, totalPcs: 0 };
+        groups[bId].bagCount += 1;
+
+        bagBox.querySelectorAll('.item-section').forEach(itemBox => {
+            const iName = itemBox.querySelector('.i-name').value.trim() || "Unknown Item";
+            let itemData = { name: iName, img: itemBox.querySelector('.preview-img').src, variations: [] };
+
+            itemBox.querySelectorAll('.size-qty-row').forEach(row => {
+                const isFree = row.querySelector('.s-type').value === 'free';
+                const sName = isFree ? "Free Size" : row.querySelector('.s-val').value.trim().toUpperCase();
+                const q = parseFloat(row.querySelector('.s-qty').value) || 0;
+                const n = parseFloat(row.querySelector('.s-inner').value) || 0;
+                const total = q * n;
+
+                row.querySelector('.row-result').innerText = total;
+                itemData.variations.push({ size: sName, qty: q, innerQty: n, unit: row.querySelector('.s-unit').value });
+
+                // FIX: Group by Name AND Size so they don't merge
+                const groupKey = `${iName} (${sName})`; 
+                if(!groups[bId].items[groupKey]) groups[bId].items[groupKey] = 0;
+                groups[bId].items[groupKey] += total;
+                groups[bId].totalPcs += total;
+            });
+            bagData.items.push(itemData);
+        });
+        fullDraft.bags.push(bagData);
+    });
+
+    // Generate HTML
+    let html = "";
+    for (let bId in groups) {
+        const bCount = groups[bId].bagCount;
+        const bLabel = bCount > 1 ? `${bCount} bags combined` : `1 bag`;
+        
+        html += `
+            <div class="summary-bag-group">
+                <span class="summary-bag-title">Consignment: ${bId}</span>
+                <span class="summary-bag-count">${bLabel}</span>
+        `;
+        for (let itemKey in groups[bId].items) {
+            html += `
+                <div class="summary-item-line">
+                    <span>📦 ${itemKey}</span>
+                    <span style="color:var(--accent-green)">${groups[bId].items[itemKey]} pcs</span>
+                </div>
+            `;
+        }
+        html += `<div style="text-align:right; margin-top:5px; font-weight:bold; border-top:1px dashed #333;">Total: ${groups[bId].totalPcs} pcs</div></div>`;
+    }
+
+    document.getElementById('modalData').innerHTML = html || "No data.";
+    document.getElementById('calcTrigger').style.display = hasAnyId ? "block" : "none";
+    
+    try {
+        localStorage.setItem('thawmhnaw_v11_save', JSON.stringify(fullDraft));
+    } catch(e) { console.log("Storage full"); }
+};
+
+        window.showModal = () => document.getElementById('calcModal').style.display = "flex";
+        window.hideModal = () => document.getElementById('calcModal').style.display = "none";
+
+        window.submitToAdmin = async () => {
+            const draft = JSON.parse(localStorage.getItem('thawmhnaw_v11_save'));
+            let valid = true;
+            if(!draft.staff) valid = false;
+            draft.bags.forEach(b => {
+                if(b.number === "??") valid = false;
+                b.items.forEach(i => {
+                    if(!i.name || i.name === "Unknown Item") valid = false;
+                    i.variations.forEach(v => { if(!v.qty || !v.innerQty) valid = false; });
+                });
+            });
+
+            if(!valid) return mizoAlert("KIM LO THIL A AWM!\nBox zawng zawng hi dah khah vek tur a ni e.");
+
+            try {
+                await addDoc(collection(db, "pending_approvals"), {
+                    category: "THAWMHNAW", staffName: draft.staff, date: new Date().toLocaleDateString('en-GB'),
+                    timestamp: serverTimestamp(), details: draft.bags
+                });
+                mizoAlert(" SAWMPATEA RECORDA DAH LUT A NI E!\nI hna i thawk tha hle mai.");
+                localStorage.removeItem('thawmhnaw_v11_save');
+                setTimeout(() => location.reload(), 2000);
+            } catch(e) { mizoAlert("Error: " + e.message); }
+        };
+
+                window.onload = () => {
+            // --- New Date Logic ---
+            const now = new Date();
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', options);
+            // ----------------------
+
+            const saved = localStorage.getItem('thawmhnaw_v11_save');
+            if(saved) {
+                const d = JSON.parse(saved);
+                document.getElementById('globalStaff').value = d.staff || '';
+                d.bags.forEach(b => addConsignment(b));
+            } else addConsignment();
+        };
+
+    </script>
+</body>
+</html>

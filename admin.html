@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KimKim | Master Admin Hub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg: #000; --accent: #4ade80; --text: #fff; --blue: #3b82f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+
+        /* SEARCH BAR - TOP */
+        .header-search { 
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 5000; 
+            background: var(--bg); padding: 15px; border-bottom: 1px solid #222; 
+            box-sizing: border-box;
+        }
+        .search-input { 
+            width: 100%; background: #ffffff !important; color: #000 !important; 
+            border: none; padding: 15px; border-radius: 12px; font-weight: bold; 
+            font-size: 16px; box-sizing: border-box;
+        }
+
+        .main-container { padding-top: 90px; padding-bottom: 100px; text-align: center; }
+
+        /* CATEGORY POPUP */
+        #categoryPopup { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #111; border: 2px solid var(--accent); padding: 20px; border-radius: 25px;
+            z-index: 6000; width: 85%; max-width: 400px; box-shadow: 0 0 50px #000;
+        }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+        .menu-item { 
+            background: #222; color: #fff; text-decoration: none; padding: 20px 10px; 
+            border-radius: 15px; text-align: center; font-size: 13px; font-weight: bold; 
+            border: 1px solid #333; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5500; }
+
+        /* FOOTER NAV */
+        .footer-nav { 
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #111; 
+            display: flex; justify-content: space-around; padding: 15px 0;
+            border-top: 1px solid #333; z-index: 4000;
+        }
+        .nav-btn { background: none; border: none; color: #777; text-align: center; font-size: 10px; cursor: pointer; flex: 1; }
+        .nav-btn i { display: block; font-size: 24px; margin-bottom: 5px; }
+        .nav-btn.active { color: var(--accent); }
+
+        /* CALCULATOR */
+        #calcBox {
+            position: fixed; top: 120px; left: 20px; width: 300px; background: #222; 
+            border: 2px solid #444; border-radius: 20px; z-index: 7000; display: none;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9); transform-origin: top left;
+        }
+        .calc-header { background: #333; padding: 15px; cursor: move; display: flex; justify-content: space-between; border-radius: 20px 20px 0 0; }
+        .calc-display { background: #000; padding: 20px; text-align: right; }
+        #screen { font-size: 28px; color: #fff; min-height: 35px; }
+        #preview { font-size: 18px; color: var(--accent); height: 20px; margin-top: 5px; }
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; }
+        .calc-grid button { height: 60px; border: none; border-radius: 12px; background: #333; color: #fff; font-size: 22px; font-weight: bold; }
+        .calc-footer { display: flex; justify-content: center; gap: 30px; padding: 15px; background: #1a1a1a; border-radius: 0 0 20px 20px; }
+        .zoom-btn { width: 45px; height: 45px; border-radius: 50%; border: none; color: white; font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-search">
+        <input type="text" id="masterSearch" class="search-input" placeholder="Search items..." oninput="saveSearch()">
+    </div>
+
+    <div class="main-container">
+        <i class="fa-solid fa-folder-tree" style="font-size: 50px; color: #333; margin-top: 40px;"></i>
+        <h2 style="color: #333;">Master Hub</h2>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="window.togglePopup(false)"></div>
+    <div id="categoryPopup">
+        <div style="text-align:center; font-weight:bold; color:var(--accent);">CATEGORIES</div>
+        <div class="menu-grid">
+            <a href="reciver.html" class="menu-item"><i class="fa-solid fa-shirt"></i>Thawmhnaw</a>
+            <a href="s-reciver.html" class="menu-item"><i class="fa-solid fa-shoe-prints"></i>Slipper</a>
+            <a href="p-reciver.html" class="menu-item"><i class="fa-solid fa-flask"></i>Plastic</a>
+            <a href="t-reciver.html" class="menu-item"><i class="fa-solid fa-robot"></i>Toys</a>
+            <a href="et-reciver.html" class="menu-item"><i class="fa-solid fa-gamepad"></i>Toys Man to</a>
+            <a href="bag-reciver.html" class="menu-item"><i class="fa-solid fa-box-open"></i>Trip Tleng Thar</a>
+        </div>
+    </div>
+
+    <div id="calcBox">
+        <div class="calc-header" id="calcHeader"><span>DRAG</span><i class="fa-solid fa-times-circle" onclick="window.toggleCalc()" style="color:red;"></i></div>
+        <div class="calc-display"><div id="screen"></div><div id="preview">0</div></div>
+        <div class="calc-grid">
+            <button style="color:red;" onclick="window.clr()">C</button>
+            <button onclick="window.ins('/')">÷</button><button onclick="window.ins('*')">×</button><button onclick="window.del()">←</button>
+            <button onclick="window.ins('7')">7</button><button onclick="window.ins('8')">8</button><button onclick="window.ins('9')">9</button><button onclick="window.ins('-')">−</button>
+            <button onclick="window.ins('4')">4</button><button onclick="window.ins('5')">5</button><button onclick="window.ins('6')">6</button><button onclick="window.ins('+')">+</button>
+            <button onclick="window.ins('1')">1</button><button onclick="ins('2')">2</button><button onclick="window.ins('3')">3</button>
+            <button onclick="window.calculate()" style="background:var(--accent); color:#000;">=</button>
+            <button onclick="window.ins('0')" style="grid-column: span 2;">0</button><button onclick="window.ins('.')">.</button>
+        </div>
+        <div class="calc-footer">
+            <button class="zoom-btn" style="background:red;" onclick="window.changeSize(-1)"><i class="fa-solid fa-minus"></i></button>
+            <button class="zoom-btn" style="background:black; border:1px solid #444;" onclick="window.changeSize(1)"><i class="fa-solid fa-plus"></i></button>
+        </div>
+    </div>
+
+    <div class="footer-nav">
+        <button class="nav-btn active" onclick="location.reload()"><i class="fa-solid fa-home"></i>Home</button>
+        <button class="nav-btn" onclick="window.togglePopup(true)"><i class="fa-solid fa-layer-group"></i>Categories</button>
+        <button class="nav-btn" onclick="window.toggleCalc()"><i class="fa-solid fa-calculator"></i>Calc</button>
+        <button class="nav-btn" onclick="alert('Admin Mode')"><i class="fa-solid fa-shield-halved"></i>Admin</button>
+    </div>
+
+    <script>
+        // FIX FOR THE "NOT DEFINED" ERRORS
+        window.togglePopup = (s) => {
+            document.getElementById('categoryPopup').style.display = s ? 'block' : 'none';
+            document.getElementById('overlay').style.display = s ? 'block' : 'none';
+        };
+
+        window.toggleCalc = () => {
+            const c = document.getElementById('calcBox');
+            c.style.display = (c.style.display === 'block') ? 'none' : 'block';
+        };
+
+        window.saveSearch = () => {
+            localStorage.setItem('admin_search', document.getElementById('masterSearch').value);
+        };
+
+        window.onload = () => {
+            document.getElementById('masterSearch').value = localStorage.getItem('admin_search') || '';
+        };
+
+        // CALCULATOR MATH
+        let scale = 1, clicks = 0;
+        window.changeSize = (dir) => {
+            if(dir === 1 && clicks < 3) { clicks++; scale += 0.15; }
+            else if(dir === -1 && clicks > -3) { clicks--; scale -= 0.15; }
+            document.getElementById('calcBox').style.transform = `scale(${scale})`;
+        };
+
+        const screen = document.getElementById('screen');
+        const preview = document.getElementById('preview');
+        window.ins = (v) => { screen.innerText += v; window.updatePreview(); };
+        window.clr = () => { screen.innerText = ''; preview.innerText = '0'; };
+        window.del = () => { screen.innerText = screen.innerText.slice(0, -1); window.updatePreview(); };
+        window.updatePreview = () => {
+            try { preview.innerText = eval(screen.innerText.replace(/×/g, '*').replace(/÷/g, '/')) || '0'; } catch {}
+        };
+        window.calculate = () => { 
+            try { screen.innerText = eval(screen.innerText.replace(/×/g, '*').replace(/÷/g, '/')); preview.innerText = ''; } 
+            catch { screen.innerText='Error'; } 
+        };
+
+        // DRAG
+        const box = document.getElementById("calcBox");
+        const header = document.getElementById("calcHeader");
+        let ox, oy;
+        header.addEventListener("touchstart", (e) => {
+            ox = e.touches[0].clientX - box.offsetLeft; oy = e.touches[0].clientY - box.offsetTop;
+        });
+        header.addEventListener("touchmove", (e) => {
+            box.style.left = (e.touches[0].clientX - ox) + "px"; box.style.top = (e.touches[0].clientY - oy) + "px";
+            e.preventDefault();
+        }, {passive: false});
+    </script>
+</body>
+</html>

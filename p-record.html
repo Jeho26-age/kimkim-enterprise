@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Plastic Record | KimKim</title>
+    <style>
+        :root {
+            --bg-dark: #000000; --card-dark: #111111; --border: #222;
+            --accent-blue: #3b82f6; --text-gray: #888;
+        }
+        body { 
+            margin: 0; background: var(--bg-dark); color: white; 
+            font-family: 'Segoe UI', sans-serif; padding: 15px; padding-bottom: 110px;
+        }
+        
+        .category-header { text-align: center; background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid var(--accent-blue); margin-bottom: 10px; }
+        .date-display { text-align: center; font-size: 13px; color: var(--text-gray); margin-bottom: 15px; font-weight: bold; }
+
+        input, select { width: 100%; background: var(--card-dark); border: 1px solid var(--border); padding: 12px; border-radius: 10px; color: white; box-sizing: border-box; font-size: 14px; outline: none; margin-bottom: 5px; }
+        
+        /* Container Header Style */
+        .container-box { border: 1px solid #333; border-radius: 20px; padding: 15px; margin-bottom: 25px; background: #080808; position: relative; border-top: 3px solid var(--accent-blue); }
+        .container-label { font-size: 12px; color: var(--accent-blue); font-weight: bold; margin-bottom: 5px; display: block; text-transform: uppercase; }
+
+        .item-section { background: #161616; border-radius: 15px; padding: 15px; margin-top: 10px; border: 1px solid #222; position: relative; }
+        
+        #calcTrigger {
+            position: fixed; bottom: 100px; right: 20px; width: 70px; height: 70px; border: 2px solid var(--accent-blue); 
+            background-image: url('sawmte.jpg'); background-size: cover; background-position: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8); z-index: 1000; display: none; touch-action: none;
+        }
+
+        #calcModal, #mizoAlertModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; justify-content: center; align-items: center; }
+        .modal-content { background: #111; border: 2px solid var(--accent-blue); border-radius: 20px; padding: 20px; overflow-y: auto; max-height: 80vh; width: 100%; }
+        
+        .size-qty-row { display: flex; flex-direction: column; gap: 8px; background: #000; padding: 10px; border-radius: 12px; margin-top: 8px; border: 1px solid #222; }
+        .row-bottom { display: grid; grid-template-columns: 1fr 80px 50px; gap: 5px; align-items: end; }
+        .row-result { color: var(--accent-blue); font-weight: bold; font-size: 11px; text-align: right; }
+        
+        .preview-img { width: 100%; height: 200px; object-fit: contain; background: #000; border-radius: 10px; margin-bottom: 10px; display: none; border: 1px solid #333; }
+        .photo-btn { background: #222; border: 1px dashed #555; margin-bottom: 10px; padding: 12px; color: white; border-radius: 10px; width: 100%; }
+        .photo-btn.has-img { border-color: var(--accent-blue); color: var(--accent-blue); border-style: solid; }
+
+        .btn-plus { background: #111; border: 1px solid #333; color: var(--accent-blue); border-radius: 8px; padding: 12px; font-weight: bold; margin-top: 10px; width: 100%; }
+        .btn-save { position: fixed; bottom: 15px; left: 15px; right: 15px; background: var(--accent-blue); color: white; border: none; padding: 20px; border-radius: 15px; font-weight: bold; font-size: 18px; z-index: 100; }
+        .hidden-size { display: none; }
+        
+        .sum-item-group { border-bottom: 1px solid #333; padding: 10px 0; }
+        .sum-title { color: var(--accent-blue); font-weight: bold; display: block; }
+        .sum-item { margin-left: 10px; font-size: 13px; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+    <div class="category-header"><span>PLASTIC RECORD</span></div>
+    <div class="date-display" id="dateDisplay"></div>
+
+    <div class="staff-section">
+        <input type="text" id="globalStaff" placeholder="I hming ziak rawh" oninput="runCalculations()">
+    </div>
+
+    <div id="container-wrapper"></div>
+    <button class="btn-plus" onclick="addContainer()">+ Add New Bag / Box / Pack</button>
+
+    <div id="calcTrigger" onclick="showModal()"></div>
+
+    <div id="calcModal">
+        <div class="modal-content" id="modalData"></div>
+        <button class="btn-plus" style="background:var(--accent-blue); color:white; margin-top:15px;" onclick="hideModal()">DAH THA RAWH</button>
+    </div>
+
+    <div id="mizoAlertModal">
+        <div class="alert-card" style="background:#111; border:2px solid var(--accent-blue); padding:30px; border-radius:20px; text-align:center;">
+            <div id="mizoAlertText" style="margin-bottom:20px; font-size: 18px; font-weight: bold;"></div>
+            <button onclick="closeMizoAlert()" style="background:var(--accent-blue); color:white; border:none; padding:10px 30px; border-radius:10px;">OK</button>
+        </div>
+    </div>
+
+    <button class="btn-save" onclick="submitToAdmin()">SEND DATA</button>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+
+        document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+        window.mizoAlert = (text) => {
+            document.getElementById('mizoAlertText').innerText = text;
+            document.getElementById('mizoAlertModal').style.display = 'flex';
+        };
+        window.closeMizoAlert = () => { document.getElementById('mizoAlertModal').style.display = 'none'; };
+
+        // --- NEW CONTAINER LOGIC ---
+        window.addContainer = (data = null) => {
+            const cId = data?.tempId || Date.now() + Math.random();
+            document.getElementById('container-wrapper').insertAdjacentHTML('beforeend', `
+                <div class="container-box" id="cont-${cId}">
+                    <button style="float:right; color:red; border:none; background:none;" onclick="this.parentElement.remove(); runCalculations();">REMOVE</button>
+                    <span class="container-label">Select Packaging Type</span>
+                    <select class="c-unit" onchange="runCalculations()">
+                        <option value="bag" ${data?.unit==='bag'?'selected':''}>Bag</option>
+                        <option value="box" ${data?.unit==='box'?'selected':''}>Box</option>
+                        <option value="pack" ${data?.unit==='pack'?'selected':''}>Pack</option>
+                    </select>
+                    <div id="items-${cId}"></div>
+                    <button class="btn-plus" style="font-size:12px; border-color:var(--accent-blue);" onclick="addItem('${cId}')">+ Add Item to this ${data?.unit || 'Bag'}</button>
+                </div>
+            `);
+            if(data?.items) data.items.forEach(i => addItem(cId, i)); else addItem(cId);
+        };
+
+        window.addItem = (cId, data = null) => {
+            const iId = data?.tempId || Math.random().toString(36).substr(2, 9);
+            document.getElementById(`items-${cId}`).insertAdjacentHTML('beforeend', `
+                <div class="item-section">
+                    <button style="float:right; color:red; border:none; background:none;" onclick="this.parentElement.remove(); runCalculations();">×</button>
+                    <img id="prev-${iId}" class="preview-img" src="${data?.img || ''}" style="${data?.img ? 'display:block' : ''}">
+                    <input type="file" accept="image/*" id="file-${iId}" style="display:none" onchange="previewImg('${iId}')">
+                    <button id="pbtn-${iId}" class="photo-btn ${data?.img ? 'has-img' : ''}" onclick="document.getElementById('file-${iId}').click()">📷 ITEM PHOTO</button>
+                    <input type="text" class="i-name" placeholder="Item Hming" value="${data?.name || ''}" oninput="runCalculations()">
+                    <div id="sq-${iId}"></div>
+                    <button class="btn-plus" style="font-size:11px; background:#222;" onclick="addLiterQty('${iId}')">+ Liter Detail</button>
+                </div>
+            `);
+            if(data?.variations) data.variations.forEach(v => addLiterQty(iId, v)); else addLiterQty(iId);
+        };
+
+        window.addLiterQty = (iId, data = null) => {
+            const sqId = Math.random().toString(36).substr(2, 5);
+            const isLiterAwmlo = data ? (data.size === "liter awmlo") : true;
+            
+            document.getElementById(`sq-${iId}`).insertAdjacentHTML('beforeend', `
+                <div class="size-qty-row">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 30px; gap:8px;">
+                        <select class="s-type" onchange="toggleSize('${sqId}', this.value); runCalculations();">
+                            <option value="none" ${isLiterAwmlo?'selected':''}>liter awmlo</option>
+                            <option value="liter" ${!isLiterAwmlo?'selected':''}>liter</option>
+                        </select>
+                        <input type="text" id="size-${sqId}" class="s-val ${isLiterAwmlo?'hidden-size':''}" placeholder="e.g. 1L" value="${!isLiterAwmlo? (data?.size||'') :''}" oninput="runCalculations()">
+                        <button onclick="this.parentElement.parentElement.remove(); runCalculations();" style="color:red; background:none; border:none;">×</button>
+                    </div>
+                    <div class="row-bottom">
+                        <span style="font-size:10px; color:#555;">Qty & Pcs per Container</span>
+                        <input type="number" class="s-qty" placeholder="Amt" value="${data?.qty || ''}" oninput="runCalculations()">
+                        <input type="number" class="s-inner" placeholder="Pcs" value="${data?.innerQty || ''}" oninput="runCalculations()">
+                        <div class="row-result">0</div>
+                    </div>
+                </div>
+            `);
+            runCalculations();
+        };
+
+        window.toggleSize = (id, val) => { document.getElementById(`size-${id}`).className = (val === 'liter') ? 's-val' : 's-val hidden-size'; };
+
+        window.previewImg = (id) => {
+            const file = document.getElementById(`file-${id}`).files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const scale = 400 / img.width;
+                    canvas.width = 400;
+                    canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById(`prev-${id}`).src = compressed;
+                    document.getElementById(`prev-${id}`).style.display = "block";
+                    document.getElementById(`pbtn-${id}`).classList.add('has-img');
+                    runCalculations();
+                };
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.runCalculations = () => {
+            let groups = {}, hasAnyData = false, fullDraft = { staff: document.getElementById('globalStaff').value, containers: [] };
+            
+            document.querySelectorAll('.container-box').forEach(cBox => {
+                const cUnit = cBox.querySelector('.c-unit').value;
+                let contData = { unit: cUnit, items: [] };
+                hasAnyData = true;
+
+                cBox.querySelectorAll('.item-section').forEach(iBox => {
+                    const iName = iBox.querySelector('.i-name').value.trim() || "???";
+                    let itemData = { name: iName, img: iBox.querySelector('.preview-img').src, variations: [] };
+
+                    iBox.querySelectorAll('.size-qty-row').forEach(row => {
+                        const isLiterType = row.querySelector('.s-type').value === 'liter';
+                        const sLabel = isLiterType ? row.querySelector('.s-val').value.trim() : "liter awmlo";
+                        const q = parseFloat(row.querySelector('.s-qty').value) || 0;
+                        const n = parseFloat(row.querySelector('.s-inner').value) || 0;
+                        const total = q * n;
+
+                        row.querySelector('.row-result').innerText = total;
+                        itemData.variations.push({ size: sLabel, qty: q, innerQty: n });
+
+                        const key = `${iName} (${sLabel}) [Stored in ${cUnit}]`;
+                        groups[key] = (groups[key] || 0) + total;
+                    });
+                    contData.items.push(itemData);
+                });
+                fullDraft.containers.push(contData);
+            });
+
+            let html = "";
+            let grandTotal = 0;
+            for (let k in groups) {
+                html += `<div class="sum-item-group"><span class="sum-title">📦 ${k}</span><span class="sum-item" style="color:var(--accent-blue)">${groups[k]} total pcs</span></div>`;
+                grandTotal += groups[k];
+            }
+            if(grandTotal > 0) html += `<div style="text-align:right; font-weight:bold; margin-top:10px; color:white; font-size:16px;">Total Pieces: ${grandTotal}</div>`;
+
+            document.getElementById('modalData').innerHTML = html || "Data a awm lo.";
+            document.getElementById('calcTrigger').style.display = hasAnyData ? "block" : "none";
+            localStorage.setItem('plastic_v10_save', JSON.stringify(fullDraft));
+        };
+
+        window.showModal = () => document.getElementById('calcModal').style.display = "flex";
+        window.hideModal = () => document.getElementById('calcModal').style.display = "none";
+
+        window.submitToAdmin = async () => {
+            const staff = document.getElementById('globalStaff').value.trim();
+            if(!staff) return mizoAlert("I hming ziak hmasa rawh le!");
+
+            const containers = document.querySelectorAll('.container-box');
+            if(containers.length === 0) return mizoAlert("Container (Bag/Box) pakhat tal dah rawh!");
+
+            for(let i=0; i<containers.length; i++){
+                const items = containers[i].querySelectorAll('.item-section');
+                const cUnit = containers[i].querySelector('.c-unit').value;
+                if(items.length === 0) return mizoAlert(`${cUnit.toUpperCase()} hnuai-ah hian item i la dah lo!`);
+
+                for(let k=0; k<items.length; k++){
+                    const name = items[k].querySelector('.i-name').value.trim();
+                    if(!name) return mizoAlert(`${cUnit.toUpperCase()} item ${k+1}-na hming hi i la ziak lo!`);
+                    
+                    const rows = items[k].querySelectorAll('.size-qty-row');
+                    for(let j=0; j<rows.length; j++){
+                        const type = rows[j].querySelector('.s-type').value;
+                        const val = rows[j].querySelector('.s-val').value.trim();
+                        const qty = rows[j].querySelector('.s-qty').value;
+                        const inner = rows[j].querySelector('.s-inner').value;
+
+                        if(type === 'liter' && !val) return mizoAlert(`"${name}" liter/size kha i dah lo!`);
+                        if(!qty || !inner) return mizoAlert(`"${name}" qty emaw pcs kha i la fill-up lo!`);
+                    }
+                }
+            }
+
+            const draft = JSON.parse(localStorage.getItem('plastic_v10_save'));
+            try {
+                await addDoc(collection(db, "pending_approvals"), {
+                    category: "PLASTIC", staffName: draft.staff, timestamp: serverTimestamp(), details: draft.containers
+                });
+                mizoAlert("SUCCESS! Data thawn zawh a ni e.");
+                localStorage.removeItem('plastic_v10_save');
+                setTimeout(() => location.reload(), 2000);
+            } catch(e) { mizoAlert("Error: " + e.message); }
+        };
+
+        window.onload = () => {
+            const saved = localStorage.getItem('plastic_v10_save');
+            if(saved) {
+                const d = JSON.parse(saved);
+                document.getElementById('globalStaff').value = d.staff || '';
+                if(d.containers && d.containers.length > 0) d.containers.forEach(c => addContainer(c)); else addContainer();
+            } else addContainer();
+        };
+    </script>
+</body>
+</html>

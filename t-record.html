@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Toys Record | KimKim</title>
+    <style>
+        :root {
+            --bg-dark: #000000; --card-dark: #111111; --border: #222;
+            --accent-gold: #fbbf24; --text-gray: #888; --error: #ff4d4d;
+        }
+        body { 
+            margin: 0; background: var(--bg-dark); color: white; 
+            font-family: 'Segoe UI', sans-serif; padding: 15px; padding-bottom: 120px;
+        }
+        
+        .category-header { text-align: center; background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid var(--accent-gold); margin-bottom: 5px; }
+        .category-header span { color: var(--accent-gold); font-weight: bold; letter-spacing: 2px; font-size: 14px; }
+        .date-display { text-align: center; font-size: 13px; color: var(--text-gray); margin-bottom: 15px; }
+
+        #custom-alert {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            background: #1a1a1a; border: 2px solid var(--accent-gold); padding: 25px;
+            border-radius: 20px; text-align: center; z-index: 3000; width: 85%; max-width: 300px;
+            display: none; box-shadow: 0 0 50px rgba(0,0,0,1); transition: 0.2s;
+        }
+        #custom-alert.active { display: block; transform: translate(-50%, -50%) scale(1); }
+        #custom-alert button { background: var(--accent-gold); border: none; padding: 12px; border-radius: 10px; font-weight: bold; color: black; width: 100%; cursor: pointer; margin-top:15px;}
+
+        /* --- CALCULATOR --- */
+        #calcTrigger {
+            position: fixed; bottom: 100px; right: 20px; width: 70px; height: 70px; border: 2px solid var(--accent-gold); 
+            background-image: url('sawmte.jpg'); background-size: cover; background-position: center;
+            border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.8); z-index: 1000; display: none;
+        }
+        #calcModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; justify-content: center; align-items: center; }
+        .modal-content { background: #111; border: 2px solid var(--accent-gold); border-radius: 20px; padding: 20px; overflow-y: auto; max-height: 80vh; width: 100%; }
+
+        /* --- CONTAINER STRUCTURE --- */
+        .container-box { border: 1px solid #333; border-radius: 20px; padding: 15px; margin-bottom: 25px; background: #080808; position: relative; border-top: 3px solid var(--accent-gold); }
+        
+        .image-handler {
+            width: 100%; height: 120px; background: #000; border: 1px dashed #444;
+            border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center;
+            justify-content: center; position: relative; overflow: hidden;
+        }
+        .image-handler img { width: 100%; height: 100%; object-fit: cover; }
+        .file-input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+
+        .qty-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .total-display { text-align: right; color: var(--accent-gold); font-weight: bold; font-size: 12px; margin-top: 5px; }
+
+        input, select {
+            width: 100%; background: var(--card-dark); border: 1px solid var(--border);
+            padding: 12px; border-radius: 10px; color: white; box-sizing: border-box; font-size: 14px; outline: none; margin-bottom: 8px;
+        }
+        input.invalid { border: 1px solid var(--error); background: #201111; }
+
+        .btn-plus-big { background: transparent; border: 1px dashed #444; color: var(--accent-gold); border-radius: 10px; padding: 15px; font-weight: bold; width: 100%; margin-top: 10px; margin-bottom: 20px; }
+        .btn-save { position: fixed; bottom: 20px; left: 20px; right: 20px; background: var(--accent-gold); color: black; border: none; padding: 18px; border-radius: 15px; font-weight: bold; font-size: 18px; z-index: 100; }
+        #loader { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; flex-direction:column; justify-content:center; align-items:center; }
+    </style>
+</head>
+<body oninput="saveToysDraft()">
+
+    <div id="custom-alert">
+        <h2 id="alert-title">HRIATTIRNA</h2>
+        <p id="alert-msg"></p>
+        <button onclick="closeAlert()">OK</button>
+    </div>
+
+    <div id="loader"><p>Thawn mek a ni...</p></div>
+
+    <div id="calcTrigger" onclick="showModal()"></div>
+    <div id="calcModal">
+        <div class="modal-content" id="modalData"></div>
+        <button class="btn-plus-big" style="background:var(--accent-gold); color:black;" onclick="hideModal()">DAH THA RAWH</button>
+    </div>
+
+    <div class="category-header"><span>TOYS RECORD</span></div>
+    <div class="date-display" id="dateDisplay"></div>
+
+    <div style="padding: 0 5px 15px 5px;">
+        <label style="font-size:10px; color:var(--text-gray);">RECORDA DAHTU HMING</label>
+        <input type="text" id="staffName" placeholder="I hming ziak rawh">
+    </div>
+
+    <div id="container-wrapper"></div>
+    
+    <button class="btn-plus-big" onclick="addContainer()">+ ADD NEW BAG / BOX / PACKAGE</button>
+    <button class="btn-save" onclick="startSubmission()">SEND DATA</button>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+
+        document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+
+        window.showAlert = (msg, isSuccess = false) => {
+            document.getElementById('alert-msg').innerText = msg;
+            document.getElementById('custom-alert').classList.add('active');
+            if(isSuccess) window.closeAlert = () => location.reload();
+        };
+        window.closeAlert = () => document.getElementById('custom-alert').classList.remove('active');
+        window.showModal = () => document.getElementById('calcModal').style.display = "flex";
+        window.hideModal = () => document.getElementById('calcModal').style.display = "none";
+
+        window.addContainer = (data = null) => {
+            const cId = data?.tempId || Date.now() + Math.random();
+            document.getElementById('container-wrapper').insertAdjacentHTML('beforeend', `
+                <div class="container-box" id="cont-${cId}">
+                    <button style="float:right; color:red; border:none; background:none; font-size:10px;" onclick="this.parentElement.remove(); saveToysDraft();">REMOVE</button>
+                    
+                    <select class="c-unit" onchange="saveToysDraft()">
+                        <option value="bag" ${data?.unit==='bag'?'selected':''}>Bag</option>
+                        <option value="box" ${data?.unit==='box'?'selected':''}>Box</option>
+                        <option value="package" ${data?.unit==='package'?'selected':''}>Package</option>
+                    </select>
+
+                    <div class="image-handler">
+                        <span>+ Toy Photo</span>
+                        <input type="file" class="file-input" accept="image/*" onchange="previewImg(this)">
+                        ${data?.img ? `<img src="${data.img}">` : ''}
+                    </div>
+
+                    <input type="text" class="p-name check-empty" placeholder="Toy Hming / Model" value="${data?.name || ''}">
+                    
+                    <div class="qty-grid">
+                        <div>
+                            <label style="font-size:9px; color:gray;">BOX/BAG ZAT</label>
+                            <input type="number" class="c-qty check-empty" placeholder="Qty" value="${data?.qty || ''}">
+                        </div>
+                        <div>
+                            <label style="font-size:9px; color:gray;">BOX PUI PCS ZAT</label>
+                            <input type="number" class="c-inner check-empty" placeholder="Pcs" value="${data?.inner || ''}">
+                        </div>
+                    </div>
+                    <div class="total-display">Total: <span class="row-total">0</span> pcs</div>
+                </div>
+            `);
+            saveToysDraft();
+        };
+
+        window.previewImg = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const max_w = 400;
+                    const scale = max_w / img.width;
+                    canvas.width = max_w;
+                    canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.6); // Image compression
+                    const parent = input.parentElement;
+                    parent.querySelector('span').style.display = 'none';
+                    let preview = parent.querySelector('img') || document.createElement('img');
+                    preview.src = compressed;
+                    if(!parent.querySelector('img')) parent.appendChild(preview);
+                    saveToysDraft();
+                };
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.saveToysDraft = () => {
+            let summaryHTML = "", grandTotal = 0, hasItems = false;
+            const containers = [];
+
+            document.querySelectorAll('.container-box').forEach(cBox => {
+                hasItems = true;
+                const unit = cBox.querySelector('.c-unit').value;
+                const name = cBox.querySelector('.p-name').value || "???";
+                const q = parseFloat(cBox.querySelector('.c-qty').value) || 0;
+                const n = parseFloat(cBox.querySelector('.c-inner').value) || 0;
+                const total = q * n;
+                const img = cBox.querySelector('img')?.src || null;
+
+                cBox.querySelector('.row-total').innerText = total;
+                grandTotal += total;
+
+                summaryHTML += `
+                    <div style="border-bottom:1px solid #333; padding:10px 0;">
+                        <span style="color:var(--accent-gold); font-weight:bold;">📦 ${name}</span><br>
+                        <small>${q} ${unit} x ${n} pcs = <b>${total} pcs</b></small>
+                    </div>`;
+
+                containers.push({ unit, name, qty: q, inner: n, total, img });
+            });
+
+            document.getElementById('modalData').innerHTML = summaryHTML || "No items added.";
+            if(grandTotal > 0) document.getElementById('modalData').innerHTML += `<div style="text-align:right; font-weight:bold; color:var(--accent-gold); margin-top:10px;">GRAND TOTAL: ${grandTotal} PCS</div>`;
+            
+            document.getElementById('calcTrigger').style.display = hasItems ? "block" : "none"; // Floating calculator
+            try { localStorage.setItem('toys_record_draft', JSON.stringify({ staff: document.getElementById('staffName').value, containers })); } catch(e) { console.warn("Draft full"); }
+        };
+
+        window.startSubmission = async () => {
+            const staff = document.getElementById('staffName').value.trim();
+            if(!staff) return showAlert("I hming ziak hmasa rawh!");
+            
+            const boxes = document.querySelectorAll('.container-box');
+            if(boxes.length === 0) return showAlert("Item pakhat tal dah rawh!");
+
+            let error = false;
+            boxes.forEach(b => {
+                b.querySelectorAll('.check-empty').forEach(i => {
+                    if(!i.value.trim()) { i.classList.add('invalid'); error = true; }
+                });
+            });
+            if(error) return showAlert("A ruak zawng zawng hi dah khat rawh.");
+
+            document.getElementById('loader').style.display = "flex";
+            const draft = JSON.parse(localStorage.getItem('toys_record_draft'));
+            try {
+                await addDoc(collection(db, "pending_approvals"), {
+                    category: "Toys", // Updated category name
+                    staffName: staff, 
+                    timestamp: serverTimestamp(), 
+                    details: draft.containers, 
+                    status: "pending"
+                });
+                localStorage.removeItem('toys_record_draft');
+                showAlert("SUCCESS! Record thawn a ni e.", true);
+            } catch(e) { 
+                document.getElementById('loader').style.display = "none";
+                showAlert("Error: " + e.message); 
+            }
+        };
+
+        window.onload = () => {
+            const saved = localStorage.getItem('toys_record_draft');
+            if(saved) {
+                const d = JSON.parse(saved);
+                document.getElementById('staffName').value = d.staff || '';
+                if(d.containers?.length) d.containers.forEach(c => addContainer(c)); else addContainer();
+            } else addContainer();
+        };
+    </script>
+</body>
+</html>

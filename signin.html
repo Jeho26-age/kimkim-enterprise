@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 320px;
+            text-align: center;
+        }
+        .input-group { position: relative; margin-bottom: 12px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .btn-signin { background: #007bff; color: white; }
+        .btn-ok { background: #28a745; color: white; }
+        .btn-signout { background: #dc3545; color: white; }
+
+        /* Beautiful Error Text */
+        #error-msg {
+            display: none;
+            color: #721c24;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .user-info {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #333;
+            word-break: break-all;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="signin-form">
+        <h2 style="margin-top:0;">Sign In</h2>
+        <div class="input-group">
+            <input type="email" id="email" placeholder="Gmail Address">
+        </div>
+        <div class="input-group">
+            <input type="password" id="pass" placeholder="Password">
+        </div>
+        
+        <button class="btn-signin" id="loginBtn" onclick="checkAuth()">Sign In</button>
+        <div id="error-msg">Wrong password. Please try again.</div>
+    </div>
+
+    <div id="success-state" class="hidden">
+        <h2>Logged In</h2>
+        <div class="user-info" id="display-email"></div>
+        <button class="btn-ok" onclick="location.href='homepage.html'">OK</button>
+        <button class="btn-signout" id="signOutBtn">Sign Out</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+        authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+        projectId: "kimkimenterprise-516c4",
+        storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+        messagingSenderId: "782456699398",
+        appId: "1:782456699398:web:c069d267ea8d62b197e187"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Make checkAuth available to the button
+    window.checkAuth = async () => {
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('pass').value;
+        const error = document.getElementById('error-msg');
+        const btn = document.getElementById('loginBtn');
+
+        if (!email || !pass) {
+            alert("Please fill in everything.");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Checking...";
+
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+            // SUCCESS
+            error.style.display = 'none';
+            document.getElementById('signin-form').classList.add('hidden');
+            document.getElementById('success-state').classList.remove('hidden');
+            document.getElementById('display-email').innerText = userCredential.user.email;
+        } catch (err) {
+            // FAILURE
+            console.error(err.code);
+            error.style.display = 'block';
+            btn.disabled = false;
+            btn.innerText = "Sign In";
+        }
+    };
+
+    // Sign Out Logic
+    document.getElementById('signOutBtn').onclick = async () => {
+        await signOut(auth);
+        location.reload();
+    };
+</script>
+
+</body>
+</html>

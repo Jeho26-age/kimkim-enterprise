@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Slipper Recording | KimKim</title>
+    <style>
+        :root {
+            --bg-dark: #000000; --card-dark: #111111; --border: #222;
+            --accent-green: #4ade80; --text-gray: #888;
+        }
+        body { 
+            margin: 0; background: var(--bg-dark); color: white; 
+            font-family: 'Segoe UI', sans-serif; padding: 15px; padding-bottom: 110px;
+        }
+        
+        .category-header { text-align: center; background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid var(--accent-green); margin-bottom: 15px; }
+        .category-header span { color: var(--accent-green); font-weight: bold; letter-spacing: 2px; }
+
+        input, select { width: 100%; background: var(--card-dark); border: 1px solid var(--border); padding: 12px; border-radius: 10px; color: white; box-sizing: border-box; font-size: 14px; outline: none; margin-bottom: 5px; }
+        
+        .consignment-box { border: 1px solid #333; border-radius: 20px; padding: 15px; margin-bottom: 25px; background: #080808; position: relative; border-top: 3px solid var(--accent-green); }
+        .item-section { background: #161616; border-radius: 15px; padding: 15px; margin-top: 15px; border-left: 3px solid var(--accent-green); position: relative; }
+        
+        #calcTrigger {
+            position: fixed; bottom: 100px; right: 20px; width: 70px; height: 70px; border: 2px solid var(--accent-green); 
+            background-image: url('sawmte.jpg'); background-size: cover; background-position: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8); z-index: 1000; display: none; border-radius: 50%;
+        }
+
+        #calcModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; justify-content: center; align-items: center; }
+        .modal-content { background: #111; border: 2px solid var(--accent-green); border-radius: 20px; padding: 20px; overflow-y: auto; max-height: 80vh; width: 100%; }
+        
+        .size-qty-row { background: #000; padding: 10px; border-radius: 12px; margin-top: 8px; border: 1px solid #222; }
+        .row-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 40px; gap: 8px; align-items: center; }
+        .label-micro { font-size: 9px; color: var(--text-gray); text-transform: uppercase; margin-bottom: 2px; display: block; }
+        
+        .row-result { color: var(--accent-green); font-weight: bold; font-size: 11px; text-align: right; margin-top: 5px; }
+        
+        .preview-img { width: 100%; height: 180px; object-fit: contain; background: #000; border-radius: 10px; margin-bottom: 10px; display: none; border: 1px solid #333; }
+        .photo-btn { background: #222; border: 1px dashed #555; margin-bottom: 10px; cursor: pointer; padding: 12px; color: white; border-radius: 10px; width: 100%; }
+        .photo-btn.has-img { border-color: var(--accent-green); color: var(--accent-green); border-style: solid; }
+
+        .btn-plus { background: #111; border: 1px solid #333; color: var(--accent-green); border-radius: 8px; padding: 12px; font-weight: bold; margin-top: 10px; width: 100%; }
+        .btn-save { position: fixed; bottom: 15px; left: 15px; right: 15px; background: var(--accent-green); color: black; border: none; padding: 20px; border-radius: 15px; font-weight: bold; font-size: 18px; z-index: 100; }
+        
+        #custom-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; border: 2px solid var(--accent-green); border-radius: 20px; padding: 30px; text-align: center; width: 85%; z-index: 3000; display: none; }
+    </style>
+</head>
+<body oninput="runCalculations()">
+
+    <div id="custom-alert">
+        <div id="alert-msg" style="font-size: 18px; margin-bottom: 20px;"></div>
+        <button class="btn-plus" style="background:var(--accent-green); color:black;" onclick="document.getElementById('custom-alert').style.display='none'">OKAY</button>
+    </div>
+
+    <div class="category-header"><span>SLIPPER RECORDING</span></div>
+
+
+<div id="current-date" style="text-align: center; color: var(--accent-green); font-size: 14px; margin-bottom: 15px; font-weight: bold; opacity: 0.8;"></div>
+
+    <div style="padding: 0 5px 15px 5px;">
+        <label style="font-size:10px; color:var(--text-gray);">RECORDA DAHTU HMING</label>
+        <input type="text" id="globalStaff" placeholder="I hming ziak rawh">
+    </div>
+
+    <div id="consignment-wrapper"></div>
+    <button class="btn-plus" onclick="addConsignment()">+ Add New Consignment Bag</button>
+
+    <div id="calcTrigger" onclick="showModal()"></div>
+
+    <div id="calcModal">
+        <div class="modal-content" id="modalData"></div>
+        <button class="btn-plus" style="background:var(--accent-green); color:black; margin-top:15px;" onclick="hideModal()">CLOSE</button>
+    </div>
+
+    <button class="btn-save" onclick="submitToAdmin()">SEND DATA</button>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+
+        window.addConsignment = (data = null) => {
+            const cId = data?.tempId || Date.now() + Math.random();
+            document.getElementById('consignment-wrapper').insertAdjacentHTML('beforeend', `
+                <div class="consignment-box">
+                    <button style="float:right; color:red; border:none; background:none; font-size:10px;" onclick="this.parentElement.remove(); runCalculations();">REMOVE</button>
+                    <label style="font-size:10px; color:#888;">CONSIGNMENT BAG #</label>
+                    <input type="text" class="c-number" placeholder="Enter Bag ID" value="${data?.number || ''}">
+                    <div id="items-${cId}"></div>
+                    <button class="btn-plus" style="font-size:12px; border-color:var(--accent-green);" onclick="addItem('${cId}')">+ Add Slipper to this Bag</button>
+                </div>
+            `);
+            if(data?.items) data.items.forEach(i => addItem(cId, i)); else addItem(cId);
+        };
+
+        window.addItem = (cId, data = null) => {
+            const iId = data?.tempId || Math.random().toString(36).substr(2, 9);
+            document.getElementById(`items-${cId}`).insertAdjacentHTML('beforeend', `
+                <div class="item-section">
+                    <button style="float:right; color:red; border:none; background:none;" onclick="this.parentElement.remove(); runCalculations();">×</button>
+                    <img id="prev-${iId}" class="preview-img" src="${data?.img || ''}" style="${data?.img ? 'display:block' : ''}">
+                    <input type="file" accept="image/*" id="file-${iId}" style="display:none" onchange="previewImg('${iId}')">
+                    <button id="pbtn-${iId}" class="photo-btn ${data?.img ? 'has-img' : ''}" onclick="document.getElementById('file-${iId}').click()">🖼️ SLIPPER PHOTO</button>
+                    <input type="text" class="i-name" placeholder="Slipper Model Name" value="${data?.name || ''}">
+                    <div id="sq-${iId}"></div>
+                    <button class="btn-plus" style="font-size:11px; background:#222;" onclick="addSizeQty('${iId}')">+ Add Size & Set</button>
+                </div>
+            `);
+            if(data?.variations) data.variations.forEach(v => addSizeQty(iId, v)); else addSizeQty(iId);
+        };
+
+        window.addSizeQty = (iId, data = null) => {
+            document.getElementById(`sq-${iId}`).insertAdjacentHTML('beforeend', `
+                <div class="size-qty-row">
+                    <div class="row-grid">
+                        <div><span class="label-micro">Size</span><input type="text" class="s-val" placeholder="40..." value="${data?.size || ''}"></div>
+                        <div><span class="label-micro">Set Zat (0=Loose)</span><input type="number" class="s-qty" placeholder="Set" value="${data?.qty ?? ''}"></div>
+                        <div><span class="label-micro">Pcs</span><input type="number" class="s-inner" placeholder="Pcs" value="${data?.innerQty ?? ''}"></div>
+                        <button onclick="this.parentElement.parentElement.remove(); runCalculations();" style="color:red; background:none; border:none; margin-top:15px;">×</button>
+                    </div>
+                    <div class="row-result">Total: <span class="res-num">0</span> pcs</div>
+                </div>
+            `);
+            runCalculations();
+        };
+
+        window.previewImg = (id) => {
+            const file = document.getElementById(`file-${id}`).files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const max_w = 400;
+                    const scale = max_w / img.width;
+                    canvas.width = max_w; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById(`prev-${id}`).src = compressed;
+                    document.getElementById(`prev-${id}`).style.display = "block";
+                    document.getElementById(`pbtn-${id}`).classList.add('has-img');
+                    runCalculations();
+                };
+            };
+            if(file) reader.readAsDataURL(file);
+        };
+
+        window.runCalculations = () => {
+    let groups = {}, hasAnyId = false, fullDraft = { staff: document.getElementById('globalStaff').value, bags: [] };
+    
+    document.querySelectorAll('.consignment-box').forEach(bagBox => {
+        const bId = bagBox.querySelector('.c-number').value.trim() || "??";
+        if(bId !== "??") hasAnyId = true;
+        
+        let bagData = { number: bId, items: [] };
+
+        // Logic to count how many actual bags share this ID
+        if(!groups[bId]) {
+            groups[bId] = { bagCount: 0, items: {}, totalPcs: 0 };
+        }
+        groups[bId].bagCount += 1;
+
+        bagBox.querySelectorAll('.item-section').forEach(itemBox => {
+            const iName = itemBox.querySelector('.i-name').value.trim() || "Unknown Slipper";
+            let itemData = { name: iName, img: itemBox.querySelector('.preview-img').src, variations: [] };
+
+            itemBox.querySelectorAll('.size-qty-row').forEach(row => {
+                const sName = row.querySelector('.s-val').value.trim() || "???";
+                const q = parseFloat(row.querySelector('.s-qty').value) || 0;
+                const n = parseFloat(row.querySelector('.s-inner').value) || 0;
+                
+                // Fixed: If Set Zat is 0, use Piece amount directly
+                let rowTotal = (q === 0) ? n : (q * n);
+
+                row.querySelector('.res-num').innerText = rowTotal;
+                itemData.variations.push({ size: sName, qty: q, innerQty: n });
+
+                const key = `${iName} (Size: ${sName})`;
+                groups[bId].items[key] = (groups[bId].items[key] || 0) + rowTotal;
+                groups[bId].totalPcs += rowTotal;
+            });
+            bagData.items.push(itemData);
+        });
+        fullDraft.bags.push(bagData);
+    });
+
+    // Generate Summary HTML
+    let html = "";
+    for (let bId in groups) {
+        const count = groups[bId].bagCount;
+        // This shows the user if there are "2 same consignment bags"
+        const bagLabel = count > 1 ? `${count} bags combined` : `1 bag`;
+        
+        html += `
+            <div style="border-bottom:1px solid #333; padding:15px 0;">
+                <span style="color:var(--accent-green); font-size:18px; display:block;">Bag: ${bId}</span>
+                <span style="color:#888; font-size:12px;">(${bagLabel})</span>
+        `;
+        for (let k in groups[bId].items) {
+            html += `<div style="display:flex; justify-content:space-between; font-size:14px; margin:5px 0;"><span>👡 ${k}</span><span style="color:var(--accent-green)">${groups[bId].items[k]} pcs</span></div>`;
+        }
+        html += `<div style="text-align:right; font-weight:bold; border-top:1px dashed #333; margin-top:5px;">Total: ${groups[bId].totalPcs} pcs</div></div>`;
+    }
+
+    document.getElementById('modalData').innerHTML = html || "No data.";
+    document.getElementById('calcTrigger').style.display = hasAnyId ? "block" : "none";
+    
+    // Safety check for LocalStorage quota
+    try {
+        localStorage.setItem('slipper_v7_save', JSON.stringify(fullDraft));
+    } catch(e) {
+        console.warn("Storage full! Try removing old photos.");
+    }
+};
+
+        window.showModal = () => document.getElementById('calcModal').style.display = "flex";
+        window.hideModal = () => document.getElementById('calcModal').style.display = "none";
+
+               window.submitToAdmin = async () => {
+            const draft = JSON.parse(localStorage.getItem('slipper_v7_save'));
+            
+            // 1. Safety Check: Is there even any data?
+            if (!draft) {
+                document.getElementById('alert-msg').innerText = "Data hmuh tur a awm lo!";
+                document.getElementById('custom-alert').style.display = 'block';
+                return;
+            }
+
+            // 2. Validator: Did they write their name?
+            if (!draft.staff || draft.staff.trim() === "") { 
+                document.getElementById('alert-msg').innerText = "Hming ziak rawh!"; 
+                document.getElementById('custom-alert').style.display = 'block'; 
+                return; 
+            }
+
+            // 3. Validator: Are there any empty/missing Bag IDs?
+            const hasEmptyBag = draft.bags.some(b => !b.number || b.number === "" || b.number === "??");
+            if (hasEmptyBag) {
+                document.getElementById('alert-msg').innerText = "Bag ID hmai a awm! (Check Bag Numbers)";
+                document.getElementById('custom-alert').style.display = 'block';
+                return;
+            }
+
+            // 4. Send to Firebase
+            try {
+                // Sending specifically to SLIPPER_RECORDS for the modular system
+                await addDoc(collection(db, "SLIPPER_RECORDS"), {
+                    category: "SLIPPER", 
+                    staffName: draft.staff, 
+                    timestamp: serverTimestamp(), 
+                    details: draft.bags,
+                    status: "pending" 
+                });
+
+                document.getElementById('alert-msg').innerText = "SUCCESS! Slipper record thawn a ni e.";
+                document.getElementById('custom-alert').style.display = 'block';
+                
+                // Clear the phone's memory only AFTER a successful send
+                localStorage.removeItem('slipper_v7_save');
+                setTimeout(() => location.reload(), 2000);
+            } catch(e) { 
+                alert("Database Error: " + e.message); 
+            }
+        };
+
+                window.onload = () => {
+            // --- New Date Logic ---
+            const now = new Date();
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', options);
+            // ----------------------
+
+            const saved = localStorage.getItem('slipper_v7_save');
+            if(saved) {
+                const d = JSON.parse(saved);
+                document.getElementById('globalStaff').value = d.staff || '';
+                d.bags.forEach(b => addConsignment(b));
+            } else addConsignment();
+        };
+
+    </script>
+</body>
+</html>

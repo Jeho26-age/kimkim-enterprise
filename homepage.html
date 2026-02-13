@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KimKim Enterprise | Inventory</title>
+    <style>
+        :root {
+            --bg-dark: #000000; --card-dark: #111111; --border-color: #222222;
+            --accent-white: #ffffff; --text-gray: #888888; --accent-green: #4ade80; --accent-blue: #3b82f6;
+        }
+        body { 
+            margin: 0; background: var(--bg-dark); font-family: 'Segoe UI', sans-serif;
+            color: var(--accent-white); height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        .header { padding: 15px 20px; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .search-bar { width: 100%; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--card-dark); color: var(--accent-white); font-size: 16px; outline: none; box-sizing: border-box; }
+        
+        .main-content { flex-grow: 1; padding: 20px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding-bottom: 100px; }
+        .item-card { background: var(--card-dark); border: 1px solid var(--border-color); border-radius: 15px; overflow: hidden; }
+        .item-image { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #222; }
+        .item-info { padding: 10px; }
+        .item-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-price { color: var(--accent-green); font-weight: bold; font-size: 14px; margin-top: 4px; }
+
+        /* --- THE FIXED SCROLLABLE MENU --- */
+        #category-menu {
+            position: fixed; bottom: -100%; left: 0; width: 100%; 
+            height: 80vh; /* Fixed height so it's easier to scroll inside */
+            background: #121212; border-top: 4px solid var(--accent-green);
+            border-radius: 30px 30px 0 0; z-index: 2000; 
+            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column;
+        }
+        #category-menu.active { bottom: 0; }
+
+        .menu-header {
+            padding: 20px 20px 10px 20px;
+            text-align: center;
+        }
+        .drag-handle { width: 40px; height: 5px; background: #333; border-radius: 10px; margin: 0 auto 15px; }
+
+        .menu-scroll-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0 20px 100px 20px; /* Large bottom padding to ensure last item is reachable */
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .menu-title { margin: 20px 0 10px 0; color: var(--accent-green); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .cat-btn {
+            background: #1c1c1c; border: 1px solid #2a2a2a; color: white;
+            padding: 18px; border-radius: 15px; font-weight: 600; font-size: 15px;
+            display: flex; justify-content: space-between; align-items: center; 
+            width: 100%; margin-bottom: 10px;
+        }
+        .bag-btn { border: 1px solid var(--accent-blue); background: #0a1322; color: var(--accent-blue); }
+
+        .overlay-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; z-index: 1999; }
+
+        /* BOTTOM NAV */
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; 
+            background: #000; display: flex; flex-direction: row; 
+            justify-content: space-around; align-items: center; 
+            border-top: 1px solid var(--border-color); 
+            padding-bottom: env(safe-area-inset-bottom); z-index: 2100;
+        }
+        .nav-item { 
+            color: var(--text-gray); text-decoration: none; font-size: 10px; 
+            background: none; border: none; flex: 1;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .nav-item.active { color: var(--accent-green); }
+        .icon { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
+
+        #popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 3000; opacity: 0; transition: opacity 0.3s; }
+        .popup-card { background: #1a1a1a; border: 1px solid var(--border-color); padding: 30px; border-radius: 24px; text-align: center; width: 70%; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay-bg" id="menu-bg" onclick="toggleMenu()"></div>
+
+    <div id="category-menu">
+        <div class="menu-header">
+            <div class="drag-handle"></div>
+        </div>
+
+        <div class="menu-scroll-area">
+            <div class="menu-title">Incoming / Logs</div>
+            <button class="cat-btn bag-btn" onclick="goToRecord('bag.html')">
+                <span>👜 Bag Record Na</span> <span>➔</span>
+            </button>
+            
+            <div class="menu-title">Inventory Records</div>
+            <button class="cat-btn" onclick="goToRecord('record.html')">1. Thawmhnaw Record <span>➔</span></button>
+            <button class="cat-btn" onclick="goToRecord('p-record.html')">2. Plastic Record <span>➔</span></button>
+            <button class="cat-btn" onclick="goToRecord('s-record.html')">3. Slipper Record <span>➔</span></button>
+            <button class="cat-btn" onclick="goToRecord('t-record.html')">4. Toys Record <span>➔</span></button>
+            <button class="cat-btn" onclick="goToRecord('et-record.html')">5. Toys Man To <span>➔</span></button>
+        </div>
+    </div>
+
+    <div id="popup-overlay">
+        <div class="popup-card">
+            <span id="popup-icon" style="font-size: 40px;">🔒</span>
+            <div id="popup-text" style="margin-top:15px; font-weight: bold;">Permission Required</div>
+        </div>
+    </div>
+
+    <header class="header">
+        <input type="text" id="searchBar" class="search-bar" placeholder="Zawnna...">
+    </header>
+
+    <main class="main-content" id="inventory-grid"></main>
+
+    <nav class="bottom-nav">
+        <a href="homepage.html" class="nav-item active">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>HOME</span>
+        </a>
+        <button id="nav-add" class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <span>ADD</span>
+        </button>
+        <button onclick="toggleMenu()" class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            <span>RECORD</span>
+        </button>
+        <button id="nav-admin" class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            <span>ADMIN</span>
+        </button>
+        <a href="account.html" class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            <span>USER</span>
+        </a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { verifyAccess } from './p-checker.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+
+        window.toggleMenu = function() {
+            const menu = document.getElementById('category-menu');
+            const bg = document.getElementById('menu-bg');
+            const isActive = menu.classList.toggle('active');
+            bg.style.display = isActive ? 'block' : 'none';
+        }
+
+        window.goToRecord = function(page) {
+            verifyAccess('staff', showPopup).then(() => {
+                window.location.href = page;
+            });
+        }
+
+        const overlay = document.getElementById('popup-overlay');
+        function showPopup(text, type = "error") {
+            document.getElementById('popup-text').innerText = text;
+            document.getElementById('popup-icon').innerText = type === "error" ? "🚫" : "🔒";
+            overlay.style.display = "flex";
+            setTimeout(() => overlay.style.opacity = "1", 10);
+            setTimeout(() => { 
+                overlay.style.opacity = "0"; 
+                setTimeout(() => overlay.style.display="none", 300); 
+            }, 2500);
+        }
+
+        let allItems = [];
+        onSnapshot(collection(db, "uploads"), (snap) => {
+            allItems = snap.docs.map(doc => doc.data());
+            render(allItems);
+        });
+
+        function render(items) {
+            document.getElementById('inventory-grid').innerHTML = items.map(i => `
+                <div class="item-card">
+                    <img src="${i.displayPhoto || i.imageURL}" class="item-image">
+                    <div class="item-info">
+                        <div class="item-name">${i.name}</div>
+                        <div class="item-price">RM ${i.price}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('nav-add').onclick = () => verifyAccess('staff', showPopup).then(() => window.location.href="add.html");
+        document.getElementById('nav-admin').onclick = () => verifyAccess('admin', showPopup).then(() => window.location.href="admin.html");
+    </script>
+</body>
+</html>

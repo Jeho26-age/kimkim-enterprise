@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bulk Bag Entry | KimKim</title>
+    <style>
+        :root {
+            --bg-dark: #000000; --card-dark: #111111; --border: #222;
+            --accent-green: #4ade80; --text-gray: #888; --error: #ff4d4d;
+        }
+        body { 
+            margin: 0; background: var(--bg-dark); color: white; 
+            font-family: 'Segoe UI', sans-serif; padding: 15px; padding-bottom: 120px;
+        }
+        
+        .category-header { text-align: center; background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid var(--accent-green); margin-bottom: 5px; }
+        .category-header span { color: var(--accent-green); font-weight: bold; letter-spacing: 2px; font-size: 14px; }
+        .date-display { text-align: center; font-size: 13px; color: var(--text-gray); margin-bottom: 15px; min-height: 18px; }
+
+        #custom-alert {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            background: #1a1a1a; border: 2px solid var(--accent-green); padding: 25px;
+            border-radius: 20px; text-align: center; z-index: 3000; width: 85%; max-width: 300px;
+            display: none; box-shadow: 0 0 50px rgba(0,0,0,1); transition: 0.2s;
+        }
+        #custom-alert.active { display: block; transform: translate(-50%, -50%) scale(1); }
+        #custom-alert h2 { margin: 0 0 10px; color: var(--accent-green); font-size: 20px; }
+        #custom-alert p { margin-bottom: 20px; line-height: 1.4; }
+        #custom-alert button { background: var(--accent-green); border: none; padding: 12px 40px; border-radius: 10px; font-weight: bold; cursor: pointer; color: black; width: 100%; font-size: 16px; }
+
+        .form-section { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #333; margin-bottom: 15px; }
+        label { font-size: 10px; color: var(--text-gray); display: block; margin-bottom: 5px; text-transform: uppercase; }
+        
+        input {
+            width: 100%; background: var(--card-dark); border: 1px solid var(--border);
+            padding: 12px; border-radius: 10px; color: white; box-sizing: border-box; font-size: 14px; outline: none;
+        }
+        input:focus { border-color: var(--accent-green); }
+
+        .entry-row { 
+            display: grid; grid-template-columns: 1fr 80px 40px; gap: 10px; 
+            background: #161616; padding: 12px; border-radius: 12px; margin-bottom: 10px; align-items: center;
+        }
+        
+        .section-title { font-size: 12px; color: var(--accent-green); margin: 20px 0 10px 5px; font-weight: bold; }
+        
+        .btn-plus { background: transparent; border: 1px dashed #444; color: var(--accent-green); border-radius: 10px; padding: 12px; font-weight: bold; width: 100%; cursor: pointer; margin-bottom: 20px; }
+        .btn-remove { color: var(--error); background: none; border: none; font-size: 24px; cursor: pointer; }
+
+        .btn-save {
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            background: var(--accent-green); color: black; border: none;
+            padding: 18px; border-radius: 15px; font-weight: bold; font-size: 18px;
+            box-shadow: 0 10px 20px rgba(74, 222, 128, 0.3); z-index: 100;
+        }
+
+        #loader { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; flex-direction:column; justify-content:center; align-items:center; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body oninput="saveBulkDraft()">
+
+    <div id="custom-alert">
+        <h2 id="alert-title">HRIATTIRNA</h2>
+        <p id="alert-msg"></p>
+        <button id="alert-btn" onclick="closeAlert()">OK</button>
+    </div>
+
+    <div id="loader">
+        <div style="border: 4px solid #f3f3f3; border-top: 4px solid var(--accent-green); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top:15px;">Sending to Admin...</p>
+    </div>
+
+    <div class="category-header"><span>BULK ARRIVAL RECORD</span></div>
+    <div class="date-display" id="dateTimeDisplay"></div>
+
+    <div class="form-section">
+        <label>Record tu hming</label>
+        <input type="text" id="staffName" placeholder="I hming...">
+    </div>
+
+    <div class="form-section">
+        <label>Kudam Hming (Store Room)</label>
+        <input type="text" id="kudamName" placeholder="Khawi kudam nge?">
+    </div>
+
+    <div class="section-title">GUNNY BAGS (IPOT)</div>
+    <div id="bag-container"></div>
+    <button class="btn-plus" onclick="addRow('bag')">+ Add Bag</button>
+
+    <div class="section-title">CARTOON BOXES</div>
+    <div id="box-container"></div>
+    <button class="btn-plus" onclick="addRow('box')">+ Add Box</button>
+
+    <div class="section-title">PLASTIC PACKETS</div>
+    <div id="plastic-container"></div>
+    <button class="btn-plus" onclick="addRow('plastic')">+ Add Plastic</button>
+
+    <button class="btn-save" onclick="submitBulkData()">SEND TO ADMIN</button>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+
+        let isTimeRunning = true;
+        let shouldRefreshOnClose = false;
+
+        function updateClock() {
+            if (!isTimeRunning) return;
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+            const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            document.getElementById('dateTimeDisplay').innerText = `${dateStr} | ${timeStr}`;
+        }
+        setInterval(updateClock, 1000);
+
+        window.showAlert = function(msg, success = false) {
+            document.getElementById('alert-msg').innerText = msg;
+            const alertBox = document.getElementById('custom-alert');
+            shouldRefreshOnClose = success;
+            alertBox.classList.add('active');
+        };
+
+        window.closeAlert = function() {
+            document.getElementById('custom-alert').classList.remove('active');
+            if (shouldRefreshOnClose) {
+                localStorage.removeItem('bulk_bag_v3_draft');
+                location.reload();
+            }
+        };
+
+        window.addRow = function(type, data = null) {
+            const container = document.getElementById(`${type}-container`);
+            const div = document.createElement('div');
+            div.className = 'entry-row';
+            div.innerHTML = `
+                <input type="text" class="${type}-id" placeholder="ID/Marking" value="${data?.id || ''}">
+                <input type="number" class="${type}-qty" placeholder="Qty" value="${data?.qty || ''}">
+                <button class="btn-remove" onclick="this.parentElement.remove(); saveBulkDraft();">×</button>
+            `;
+            container.appendChild(div);
+        };
+
+        window.saveBulkDraft = function() {
+            const draft = {
+                staff: document.getElementById('staffName').value,
+                kudam: document.getElementById('kudamName').value,
+                bags: Array.from(document.querySelectorAll('#bag-container .entry-row')).map(row => ({
+                    id: row.querySelector('.bag-id').value,
+                    qty: row.querySelector('.bag-qty').value
+                })),
+                boxes: Array.from(document.querySelectorAll('#box-container .entry-row')).map(row => ({
+                    id: row.querySelector('.box-id').value,
+                    qty: row.querySelector('.box-qty').value
+                })),
+                plastics: Array.from(document.querySelectorAll('#plastic-container .entry-row')).map(row => ({
+                    id: row.querySelector('.plastic-id').value,
+                    qty: row.querySelector('.plastic-qty').value
+                }))
+            };
+            localStorage.setItem('bulk_bag_v3_draft', JSON.stringify(draft));
+        };
+
+        window.loadBulkDraft = function() {
+            const raw = localStorage.getItem('bulk_bag_v3_draft');
+            if(!raw) {
+                addRow('bag'); addRow('box'); addRow('plastic');
+                return;
+            }
+            const draft = JSON.parse(raw);
+            document.getElementById('staffName').value = draft.staff || '';
+            document.getElementById('kudamName').value = draft.kudam || '';
+            if(draft.bags?.length) draft.bags.forEach(b => addRow('bag', b)); else addRow('bag');
+            if(draft.boxes?.length) draft.boxes.forEach(bx => addRow('box', bx)); else addRow('box');
+            if(draft.plastics?.length) draft.plastics.forEach(p => addRow('plastic', p)); else addRow('plastic');
+        };
+
+        window.submitBulkData = async function() {
+            saveBulkDraft();
+            const draft = JSON.parse(localStorage.getItem('bulk_bag_v3_draft'));
+            
+            // Post anyway logic: If fields are blank, they go as empty strings/arrays
+            isTimeRunning = false;
+            const finalTimeLabel = document.getElementById('dateTimeDisplay').innerText;
+            document.getElementById('loader').style.display = "flex";
+
+            try {
+                await addDoc(collection(db, "pending_approvals"), {
+                    category: "BULK ARRIVAL",
+                    staffName: draft.staff || "N/A",
+                    kudamName: draft.kudam || "N/A",
+                    submittedAt: finalTimeLabel,
+                    timestamp: serverTimestamp(),
+                    status: "pending",
+                    details: { 
+                        bags: draft.bags.filter(i => i.id || i.qty), 
+                        boxes: draft.boxes.filter(i => i.id || i.qty), 
+                        plastics: draft.plastics.filter(i => i.id || i.qty) 
+                    }
+                });
+
+                document.getElementById('loader').style.display = "none";
+                showAlert("MungDal Lei Rawh An Tia, Samwte-an Dal Kg 1 A Lei", true);
+            } catch(e) {
+                showAlert("Error: " + e.message);
+                document.getElementById('loader').style.display = "none";
+                isTimeRunning = true;
+            }
+        };
+
+        window.onload = loadBulkDraft;
+    </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload History | THAWMHNAW</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg: #000; --card: #111; --accent: #4ade80; --border: #222; --text: #fff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 80px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 10px; text-decoration: none; }
+        
+        .history-card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin-bottom: 20px; border-left: 4px solid var(--accent); }
+        .history-date { color: var(--accent); font-weight: bold; font-size: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        
+        .con-block { background: #080808; border: 1px solid #1a1a1a; padding: 12px; border-radius: 10px; margin-top: 10px; }
+        .con-title { color: var(--accent); font-size: 13px; font-weight: bold; border-bottom: 1px solid #222; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .item-row { font-size: 12px; color: #aaa; margin-bottom: 4px; padding-left: 5px; }
+        .total-row { text-align: right; color: var(--accent); font-weight: bold; font-size: 13px; margin-top: 8px; border-top: 1px solid #222; padding-top: 5px; }
+        
+        .empty-msg { text-align: center; color: #555; margin-top: 50px; font-style: italic; }
+        .nav-fixed { position: fixed; bottom: 0; left: 0; width: 100%; background: #080808; padding: 15px; border-top: 1px solid #222; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
+        <h2 style="margin:0; font-size:20px;">Upload History</h2>
+    </div>
+
+    <div id="history-list"></div>
+
+    <div class="nav-fixed">
+        <button onclick="location.href='index.html'" style="background:var(--accent); color:#000; border:none; padding:10px 30px; border-radius:20px; font-weight:bold;">RETURN TO EDITOR</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fetch History strictly from history_data
+        const historyQuery = query(collection(db, "history_data"), orderBy("timestamp", "desc"));
+
+        onSnapshot(historyQuery, (snapshot) => {
+            const listDiv = document.getElementById('history-list');
+            if (snapshot.empty) {
+                listDiv.innerHTML = '<div class="empty-msg">No upload history found.</div>';
+                return;
+            }
+
+            let html = "";
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const summary = data.summary || {};
+                
+                html += `
+                <div class="history-card">
+                    <div class="history-date">
+                        <span><i class="fa-solid fa-calendar-day"></i> ${data.date}</span>
+                        <span style="color:#555; font-size:10px;">ID: ${doc.id.slice(0,5)}</span>
+                    </div>`;
+
+                for (const [conNo, details] of Object.entries(summary)) {
+                    html += `
+                    <div class="con-block">
+                        <div class="con-title">
+                            <span>Consignment: ${conNo}</span>
+                            <span style="font-size:10px; opacity:0.7;">${details.bagCount || 0} BAGS</span>
+                        </div>`;
+
+                    for (const [itemName, sizes] of Object.entries(details.items || {})) {
+                        html += `<div style="color:#fff; font-size:12px; margin-top:5px; font-weight:bold;">${itemName}</div>`;
+                        for (const [size, info] of Object.entries(sizes)) {
+                            html += `<div class="item-row">- Size ${size}: ${info.qty} ${info.unit} (${info.totalPcs} pcs)</div>`;
+                        }
+                    }
+
+                    html += `
+                        <div class="total-row">Total: ${details.grandTotal || 0} pcs</div>
+                    </div>`;
+                }
+
+                html += `</div>`;
+            });
+
+            listDiv.innerHTML = html;
+        });
+    </script>
+</body>
+</html>
