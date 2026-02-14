@@ -214,11 +214,20 @@
             const grid = document.getElementById('inventory-grid');
 
             const filtered = allItems.filter(i => {
-                const matchesCat = (activeCat === 'All' || i.category === activeCat);
-                const searchStr = `${i.name} ${i.category} ${i.price} ${i.total}`.toLowerCase();
-                const matchesSearch = searchStr.includes(term);
-                return matchesCat && matchesSearch;
-            });
+    const matchesCat = (activeCat === 'All' || i.category === activeCat);
+    
+    // This removes all spaces from your search and the item name
+    const cleanTerm = term.replace(/\s+/g, ''); 
+    const cleanName = i.name.toLowerCase().replace(/\s+/g, '');
+    
+    // Now "3 ways" becomes "3ways" and "3wasy" stays "3wasy"
+    // They will now match because "3way" is inside "3wasy"
+    const matchesSearch = cleanName.includes(cleanTerm) || 
+                         i.category.toLowerCase().includes(term) ||
+                         `${i.price}${i.total}`.includes(term);
+
+    return matchesCat && matchesSearch;
+});
 
             grid.innerHTML = filtered.map(i => {
                 const imageSrc = i.img && i.img.trim() !== "" ? i.img : 'https://via.placeholder.com/300/111/555?text=No+Photo';
