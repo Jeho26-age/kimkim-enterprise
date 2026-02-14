@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome | Kimkim Enterprise</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;400&family=Playfair+Display:ital,wght@0,400;1,500&display=swap" rel="stylesheet">
+    <title>Welcome to Kimkim Enterprise</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500&family=Playfair+Display:ital,wght@0,600;1,700&display=swap" rel="stylesheet">
     
     <style>
+        /* Decorative Background */
         body, html {
             margin: 0;
             padding: 0;
@@ -15,98 +16,122 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #000000; /* Solid Black */
+            background-color: #050505; /* Near Black */
+            background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
             color: #ffffff;
             font-family: 'Montserrat', sans-serif;
             overflow: hidden;
         }
 
-        .content-wrapper {
+        /* Decorative Gold Frame */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            padding: 60px;
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(212, 175, 55, 0.1);
+            max-width: 700px;
             text-align: center;
-            opacity: 0;
-            animation: fadeIn 2s ease-in-out forwards;
+            position: relative;
+            animation: fadeIn 2s ease-in-out;
         }
 
+        /* Header Styling */
         h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 3rem;
-            font-weight: 400;
-            margin-bottom: 10px;
-            letter-spacing: 2px;
+            font-size: 3.5rem;
+            margin: 0;
+            background: linear-gradient(to bottom, #fdfcfb 0%, #d4af37 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-style: italic;
         }
 
-        .brand-sub {
-            font-weight: 200;
-            letter-spacing: 8px;
+        .enterprise-name {
+            font-size: 1.5rem;
+            letter-spacing: 10px;
             text-transform: uppercase;
-            font-size: 0.9rem;
-            color: #a1a1a1;
-            margin-bottom: 50px;
+            margin-top: -10px;
+            margin-bottom: 40px;
+            color: #ffffff;
+            font-weight: 300;
         }
 
-        /* Sophisticated Minimalist Loader */
-        .loader-container {
-            width: 150px;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 0 auto;
-            position: relative;
+        /* Mizo Description Styling */
+        .description-box {
+            margin: 30px 0;
+            border-top: 1px solid rgba(212, 175, 55, 0.2);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 20px 0;
         }
 
-        .loader-line {
-            width: 0%;
-            height: 100%;
+        .mizo-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #e0e0e0;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* Glowing OK Button */
+        .ok-btn {
+            margin-top: 30px;
+            padding: 18px 60px;
+            background: #d4af37;
+            color: #000;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 3px;
+            border-radius: 50px;
+            display: inline-block;
+            transition: 0.3s all ease;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .ok-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.7);
             background: #ffffff;
-            position: absolute;
-            animation: grow 2.8s ease-in-out forwards;
         }
 
-        /* Animations */
+        /* Animation */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
 
-        @keyframes grow {
-            0% { width: 0%; left: 0; }
-            50% { width: 100%; left: 0; }
-            100% { width: 0%; left: 100%; }
+        /* Simple corner decorations */
+        .corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid #d4af37;
         }
-
-        .loading-text {
-            margin-top: 20px;
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            color: #555;
-        }
+        .top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; }
     </style>
 </head>
 <body>
 
-    <div class="content-wrapper">
-        <h1>Welcome</h1>
-        <div class="brand-sub">Kimkim Enterprise</div>
-        
-        <div class="loader-container">
-            <div class="loader-line"></div>
-        </div>
-        
-        <p class="loading-text">Loading Excellence</p>
-    </div>
+    <div class="glass-card">
+        <div class="corner top-left"></div>
+        <div class="corner bottom-right"></div>
 
-    <script>
-        // Redirect to homepage.html after 3.5 seconds
-        setTimeout(function() {
-            // Adding a fade-out effect before leaving
-            document.body.style.transition = "opacity 1s";
-            document.body.style.opacity = "0";
-            
-            setTimeout(function() {
-                window.location.href = "homepage.html";
-            }, 1000);
-        }, 3500);
-    </script>
+        <h1>Welcome to</h1>
+        <div class="enterprise-name">Kimkim Enterprise</div>
+
+        <div class="description-box">
+            <p class="mizo-text">
+                He page hi bungrua lo thleng (Goods Arrival) chhinchhiahna, <br>
+                stock endikna, leh <strong>bungraw man (Goods Price)</strong> <br>
+                fiahna tura siam a ni.
+            </p>
+        </div>
+
+        <a href="homepage.html" class="ok-btn">OK / Lut Rawh</a>
+    </div>
 
 </body>
 </html>
