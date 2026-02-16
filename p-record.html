@@ -207,7 +207,7 @@
                         const total = q * n;
 
                         row.querySelector('.row-result').innerText = total;
-                        itemData.variations.push({ size: sLabel, qty: q, innerQty: n });
+                        itemData.variations.push({ size: sLabel, qty: q, inner: n });
 
                         const key = `${iName} (${sLabel}) [Stored in ${cUnit}]`;
                         groups[key] = (groups[key] || 0) + total;

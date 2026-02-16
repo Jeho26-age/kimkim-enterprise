@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bills Record | KimKim</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* matching your bill.html root and base styles */
+        :root { --paper: #ffffff; --dark-bg: #000; --accent: #22c55e; --border: #222; --gray: #888; }
+        
+        body { 
+            font-family: 'Segoe UI', sans-serif; background-color: var(--dark-bg); 
+            margin: 0; padding: 15px; padding-bottom: 100px;
+        }
+
+        /* --- HEADER & FILTERS --- */
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; color: white; }
+        .main-title { font-size: 14px; font-weight: bold; color: var(--accent); letter-spacing: 1px; }
+        
+        #timeFilter { 
+            background: #111; color: var(--accent); border: 1px solid var(--accent); 
+            padding: 8px; border-radius: 8px; font-size: 12px; outline: none;
+        }
+
+        #searchBar { 
+            width: 100%; background: #111; border: 1px solid var(--border); 
+            padding: 12px; border-radius: 12px; color: white; box-sizing: border-box; margin-bottom: 20px;
+        }
+
+        /* --- THE PAPER CARD --- */
+        .bill-entry-card { margin-bottom: 30px; cursor: pointer; }
+        .entry-header { color: var(--accent); font-weight: bold; margin-bottom: 5px; font-size: 12px; display: flex; justify-content: space-between; }
+
+        /* Exactly matching your bill.html paper style */
+        .bill-paper { 
+            background: var(--paper); color: #333; padding: 25px; 
+            border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            width: 100%; max-width: 800px; margin: 0 auto; box-sizing: border-box;
+        }
+
+        .paper-header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .paper-header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; color: #000; font-weight: 900; }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; text-align: left; }
+        .info-box label { display: block; font-size: 9px; font-weight: bold; color: #888; text-transform: uppercase; }
+        .info-box span { display: block; font-size: 14px; border-bottom: 1px solid #ddd; padding: 5px 0; color: #000; }
+
+        .bill-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .bill-table th { background: #f4f4f4; font-size: 11px; padding: 10px; border: 1px solid #ddd; text-align: left; color: #000; }
+        .bill-table td { border: 1px solid #ddd; padding: 8px; font-size: 13px; color: #000; }
+
+        .grand-total-row { display: flex; justify-content: flex-end; padding: 15px 0; border-top: 2px solid #000; }
+        .total-display { text-align: right; }
+        .total-display label { font-size: 10px; font-weight: bold; display: block; color: #000; }
+        .total-display span { font-size: 24px; font-weight: 900; color: #000; }
+
+        /* --- FIXED ZOOM OVERLAY --- */
+        #zoomOverlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); z-index: 9999; display: none; 
+            overflow: auto; padding: 20px; box-sizing: border-box;
+        }
+        
+        #zoomContainer { 
+            display: flex; justify-content: center; align-items: flex-start; 
+            min-height: 100%; transition: transform 0.3s ease; transform-origin: top center;
+        }
+
+        .zoom-controls { position: fixed; bottom: 90px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 10000; }
+        .z-btn { background: var(--accent); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        /* --- BOTTOM NAV --- */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: #000; display: flex; border-top: 1px solid var(--border); z-index: 4000; }
+        .nav-item { color: var(--gray); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; text-decoration: none; }
+        .nav-item.active { color: var(--accent); }
+        .icon { width: 22px; height: 22px; margin-bottom: 4px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <div class="main-title">KIMKIM ENTERPRISE BILLS RECORD</div>
+        <select id="timeFilter" onchange="applyFilters()">
+            <option value="all">A vai in</option>
+            <option value="24h">Vawiin ami</option>
+            <option value="7d">Tun kar ami</option>
+            <option value="30d">Tun thla ami</option>
+        </select>
+    </div>
+
+    <input type="text" id="searchBar" placeholder="Search by customer name..." oninput="applyFilters()">
+
+    <div id="bill-list"></div>
+
+    <div id="zoomOverlay" onclick="closeZoom()">
+        <div id="zoomContainer">
+            <div id="zoomTarget"></div>
+        </div>
+        <div class="zoom-controls">
+            <button class="z-btn" onclick="zoomIn(event)"><i class="fa fa-search-plus"></i></button>
+            <button class="z-btn" onclick="zoomOut(event)"><i class="fa fa-search-minus"></i></button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="bill.html" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>BILL</span></a>
+        <a href="p-bills.html" class="nav-item active"><svg class="icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span>BILLS</span></a>
+        <a href="admin.html" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg><span>ADMIN</span></a>
+    </nav>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+        authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+        projectId: "kimkimenterprise-516c4",
+        storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+        messagingSenderId: "782456699398",
+        appId: "1:782456699398:web:c069d267ea8d62b197e187"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let allBills = [];
+    let currentScale = 1;
+
+    window.fetchBills = () => {
+        onSnapshot(query(collection(db, "bills")), (snapshot) => {
+            allBills = [];
+            snapshot.forEach(doc => allBills.push({ id: doc.id, ...doc.data() }));
+            allBills.sort((a, b) => new Date(a.date + " " + (a.time || "00:00")) - new Date(b.date + " " + (b.time || "00:00")));
+            applyFilters();
+        });
+    };
+
+    window.applyFilters = () => {
+        const filterType = document.getElementById('timeFilter').value;
+        const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+        let filtered = [...allBills];
+
+        if (filterType !== 'all') {
+            const now = new Date();
+            const hours = filterType === '24h' ? 24 : filterType === '7d' ? 168 : 720;
+            const cutoff = now.getTime() - (hours * 60 * 60 * 1000);
+            filtered = filtered.filter(b => new Date(b.date + " " + (b.time || "00:00")).getTime() >= cutoff);
+        }
+
+        if (searchTerm) {
+            filtered = filtered.filter(b => (b.customer || '').toLowerCase().includes(searchTerm));
+        }
+        renderBills(filtered);
+    };
+
+    function renderBills(data) {
+        const container = document.getElementById('bill-list');
+        container.innerHTML = data.map(bill => `
+            <div class="bill-entry-card" onclick="openZoom(this)">
+                <div class="entry-header">
+                    <span>CUSTOMER: ${bill.customer}</span>
+                    <span>${bill.date} | ${bill.time || ''}</span>
+                </div>
+                <div class="bill-paper">
+                    <div class="paper-header">
+                        <h1>KIMKIM ENTERPRISE</h1>
+                        <div style="text-align:right; font-size:11px;">
+                            ${bill.date}<br>${bill.time || ''}
+                        </div>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-box"><label>Customer Name</label><span>${bill.customer}</span></div>
+                        <div class="info-box"><label>Address</label><span>${bill.address}</span></div>
+                    </div>
+                    <table class="bill-table">
+                        <thead>
+                            <tr><th>ITEM HMING</th><th>Size</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
+                        </thead>
+                        <tbody>
+                            ${(bill.items || []).map(item => `
+                                <tr>
+                                    <td>${item.name}</td>
+                                    <td>${item.size}</td>
+                                    <td>${item.qty}</td>
+                                    <td>${item.rate}</td>
+                                    <td>${item.total}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div class="grand-total-row">
+                        <div class="total-display">
+                            <label>GRAND TOTAL</label>
+                            <span>₹${bill.grandTotal}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- ZOOM FUNCTIONS ---
+    window.openZoom = (card) => {
+        const paper = card.querySelector('.bill-paper').cloneNode(true);
+        const target = document.getElementById('zoomTarget');
+        target.innerHTML = '';
+        target.appendChild(paper);
+        document.getElementById('zoomOverlay').style.display = 'block';
+        currentScale = 1;
+        updateZoom();
+    };
+
+    window.closeZoom = () => { document.getElementById('zoomOverlay').style.display = 'none'; };
+
+    window.zoomIn = (e) => { e.stopPropagation(); currentScale += 0.2; updateZoom(); };
+    window.zoomOut = (e) => { e.stopPropagation(); if(currentScale > 0.5) currentScale -= 0.2; updateZoom(); };
+
+    function updateZoom() {
+        document.getElementById('zoomContainer').style.transform = `scale(${currentScale})`;
+    }
+
+    window.onload = fetchBills;
+</script>
+</body>
+</html>

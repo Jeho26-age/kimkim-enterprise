@@ -238,7 +238,13 @@
                 const total = q * n;
 
                 row.querySelector('.row-result').innerText = total;
-                itemData.variations.push({ size: sName, qty: q, innerQty: n, unit: row.querySelector('.s-unit').value });
+                itemData.variations.push({ 
+    size: sName, 
+    qty: Number(q), 
+    inner: Number(n), 
+    unit: row.querySelector('.s-unit').value 
+});
+
 
                 // FIX: Group by Name AND Size so they don't merge
                 const groupKey = `${iName} (${sName})`; 
@@ -292,7 +298,7 @@
                 if(b.number === "??") valid = false;
                 b.items.forEach(i => {
                     if(!i.name || i.name === "Unknown Item") valid = false;
-                    i.variations.forEach(v => { if(!v.qty || !v.innerQty) valid = false; });
+                    i.variations.forEach(v => { if(!v.qty || !v.inner) valid = false; });
                 });
             });
 

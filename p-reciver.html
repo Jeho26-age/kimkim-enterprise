@@ -117,7 +117,7 @@
                     (item.variations || []).forEach((v, vIdx) => {
                         const key = `${iIdx}_${vIdx}`;
                         const q = lS[`q_${key}`] !== undefined ? lS[`q_${key}`] : (v.qty || 0);
-                        const iQ = lS[`i_${key}`] !== undefined ? lS[`i_${key}`] : (v.innerQty || 1);
+                        const iQ = lS[`i_${key}`] !== undefined ? lS[`i_${key}`] : (v.inner || 1);
                         const price = lS[`p_${key}`] || '';
                         
                         html += `<div class="edit-grid">
@@ -157,7 +157,7 @@
                     const key = `${iIdx}_${vIdx}`;
                     const sz = lS[`sz_${key}`] || v.size;
                     const qty = parseFloat(lS[`q_${key}`] || v.qty || 0);
-                    const inner = parseFloat(lS[`i_${key}`] || v.innerQty || 1);
+                    const inner = parseFloat(lS[`i_${key}`] || v.inner || 1);
                     const total = qty * inner;
                     if (!consMap[cNo].items[iName][sz]) consMap[cNo].items[iName][sz] = { qty: 0, totalPcs: 0, unit: lS[`u_${key}`] || v.unit || 'set' };
                     consMap[cNo].items[iName][sz].qty += qty;
@@ -223,7 +223,7 @@
                         variations: item.variations.map((v, vIdx) => {
                             const key = `${iIdx}_${vIdx}`;
                             const q = parseFloat(lS[`q_${key}`] !== undefined ? lS[`q_${key}`] : (v.qty || 0));
-                            const iQ = parseFloat(lS[`i_${key}`] !== undefined ? lS[`i_${key}`] : (v.innerQty || 1));
+                            const iQ = parseFloat(lS[`i_${key}`] !== undefined ? lS[`i_${key}`] : (v.inner || 1));
                             return {
     size: lS[`sz_${key}`] || v.size,
     qty: q,

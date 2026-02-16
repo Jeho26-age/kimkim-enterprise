@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stock Alerts | KimKim</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg: #000; --card: #111; --danger: #ef4444; --warning: #f59e0b; --accent: #4ade80; --text: #fff; --border: #222; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 90px; }
+
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        .header-title { display: flex; align-items: center; gap: 12px; }
+        .header i { color: var(--warning); font-size: 24px; }
+        .header h1 { font-size: 20px; margin: 0; letter-spacing: 1px; font-weight: 800; }
+        
+        #countBadge { background: var(--danger); color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+
+        .alert-card { background: var(--card); border-left: 5px solid var(--danger); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; border: 1px solid var(--border); animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .alert-icon { width: 40px; height: 40px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--danger); font-size: 18px; }
+        
+        .alert-info { flex: 1; }
+        .alert-info .item-name { display: block; font-weight: 800; font-size: 15px; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; }
+        .alert-info .msg { font-size: 13px; color: #aaa; line-height: 1.4; }
+        .qty-tag { font-weight: 900; color: var(--danger); background: rgba(239, 68, 68, 0.1); padding: 2px 6px; border-radius: 4px; margin: 0 4px; }
+
+        .empty-state { text-align: center; padding: 80px 20px; color: var(--accent); }
+        .empty-state i { font-size: 60px; margin-bottom: 20px; opacity: 0.3; }
+
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; padding: 15px; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); display: flex; justify-content: center; box-sizing: border-box; }
+        .btn-back { width: 100%; max-width: 400px; background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 14px; border-radius: 12px; font-weight: 800; text-decoration: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">
+            <i class="fa-solid fa-bell"></i>
+            <h1>STOCK ALERTS</h1>
+        </div>
+        <div id="countBadge">0 Items</div>
+    </div>
+
+    <div id="alertContainer">
+        <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Scanning inventory_item...</p></div>
+    </div>
+
+    <footer class="footer">
+        <a href="admin.html" class="btn-back">BACK TO ADMIN</a>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const alertContainer = document.getElementById('alertContainer');
+        const countBadge = document.getElementById('countBadge');
+
+        // COLLECTION: inventory_item
+        onSnapshot(collection(db, "inventory_item"), (snapshot) => {
+            alertContainer.innerHTML = '';
+            let lowStockCount = 0;
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                
+                // Dig into the 'details' array first
+                const details = data.details || [];
+
+                details.forEach((det) => {
+                    const itemName = det.name || "Unnamed Item";
+                    // Then dig into the 'variations' array inside details
+                    const variations = det.variations || [];
+
+                    variations.forEach((v) => {
+                        const currentQty = Number(v.qty);
+                        const unitLabel = v.unit || "pcs";
+                        const sizeLabel = v.size ? ` (Size: ${v.size})` : "";
+
+                        if (!isNaN(currentQty) && currentQty < 20) {
+                            lowStockCount++;
+                            const card = document.createElement('div');
+                            card.className = 'alert-card';
+                            card.innerHTML = `
+                                <div class="alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                <div class="alert-info">
+                                    <span class="item-name">${itemName}${sizeLabel}</span>
+                                    <span class="msg">He item hi a tlem tawh hle, <span class="qty-tag">${currentQty} ${unitLabel}</span> chiah a awm tawh.</span>
+                                </div>
+                            `;
+                            alertContainer.appendChild(card);
+                        }
+                    });
+                });
+            });
+
+            countBadge.innerText = `${lowStockCount} Low`;
+
+            if (lowStockCount === 0) {
+                alertContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <p>Stock zawng zawng a tha e.</p>
+                    </div>`;
+            }
+        });
+    </script>
+</body>
+</html>

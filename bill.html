@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bill Generator | KimKim Enterprise</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --paper: #ffffff; --dark-bg: #000; --accent: #22c55e; --border: #222; --gray: #888; --danger: #ef4444; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark-bg); color: #333; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; padding-bottom: 100px; }
+        #status-bar { width: 100%; max-width: 800px; color: white; font-size: 12px; margin-bottom: 10px; padding: 8px; border-radius: 4px; background: #333; text-align: center; font-weight: bold; }
+        .bill-card { background: var(--paper); width: 100%; max-width: 800px; padding: 25px; box-sizing: border-box; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
+        .bill-header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .title-area h1 { margin: 0; font-size: 24px; letter-spacing: 1px; color: #000; font-weight: 900; }
+        .dt-section { text-align: right; }
+        .dt-section input { border: 1px solid #ddd; padding: 4px; border-radius: 4px; font-size: 11px; margin-bottom: 5px; width: 120px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .info-box label { display: block; font-size: 9px; font-weight: bold; color: #888; text-transform: uppercase; }
+        .info-box input { width: 100%; border: none; border-bottom: 1px solid #ddd; padding: 5px 0; font-size: 14px; outline: none; }
+        .table-container { width: 100%; overflow-x: auto; margin-bottom: 20px; }
+        .bill-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .bill-table th { background: #f4f4f4; font-size: 11px; padding: 10px; border: 1px solid #ddd; text-align: left; }
+        .bill-table td { border: 1px solid #ddd; padding: 0; position: relative; }
+        .bill-table input { width: 100%; border: none; padding: 10px; box-sizing: border-box; font-size: 13px; outline: none; background: transparent; }
+        .suggestions-list { position: absolute; top: 100%; left: 0; width: 100%; background: #fff; border: 2px solid #000; z-index: 9999; display: none; max-height: 180px; overflow-y: auto; }
+        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; color: #000; }
+        .grand-total-row { display: flex; justify-content: flex-end; padding: 15px 0; border-top: 2px solid #000; margin-top: 10px; }
+        .total-display span { display: block; font-size: 24px; font-weight: 900; color: #000; }
+        .card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .btn-line { background: #eee; border: 1px solid #ccc; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-save { background: var(--accent); color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        #customAlert { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; }
+        .alert-box { background: white; padding: 30px; border-radius: 8px; max-width: 350px; width: 90%; text-align: center; border-top: 5px solid var(--accent); }
+        .btn-ok { background: #000; color: #fff; border: none; padding: 10px 30px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: #000; display: flex; border-top: 1px solid var(--border); z-index: 4000; }
+        .nav-item { color: var(--gray); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; text-decoration: none; }
+        .nav-item.active { color: var(--accent); }
+        .icon { width: 22px; height: 22px; margin-bottom: 4px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+    <div id="status-bar">Connecting...</div>
+
+    <div id="customAlert">
+        <div class="alert-box">
+            <h2 id="alertTitle">HRIATTIRNA</h2>
+            <p id="alertMsg"></p>
+            <button class="btn-ok" onclick="closeAlert()">OK</button>
+        </div>
+    </div>
+
+    <div class="bill-card">
+        <div class="bill-header">
+            <div class="title-area"><h1>KIMKIM ENTERPRISE</h1></div>
+            <div class="dt-section">
+                <input type="date" id="billDate"><br>
+                <input type="time" id="billTime">
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-box"><label>Customer Name</label><input type="text" id="customerName" oninput="window.autoSave()"></div>
+            <div class="info-box"><label>Address</label><input type="text" id="customerAddress" oninput="window.autoSave()"></div>
+        </div>
+
+        <div class="table-container">
+            <table class="bill-table">
+                <thead>
+                    <tr><th style="width:40px">#</th><th>ITEM HMING</th><th style="width:80px">Size</th><th style="width:60px">Qty (Pieces)</th><th style="width:80px">Rate</th><th style="width:100px">Amount</th></tr>
+                </thead>
+                <tbody id="billBody"></tbody>
+            </table>
+        </div>
+
+        <div class="grand-total-row">
+            <div class="total-display"><label style="font-size:10px; font-weight:bold;">GRAND TOTAL</label><span>₹<span id="grandTotal">0.00</span></span></div>
+        </div>
+
+        <div class="card-actions">
+            <button class="btn-line" onclick="window.addRow()"><i class="fa fa-plus"></i> ADD LINE</button>
+            <button class="btn-save" id="saveBill">SAVE & SUBTRACT STOCK</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="homepage.html" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>HOME</span></a>
+        <a href="p-bills.html" class="nav-item active"><svg class="icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span>HISTORY</span></a>
+        <a href="admin.html" class="nav-item"><svg class="icon" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg><span>ADMIN</span></a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, writeBatch, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { ItemChecker } from "./item-checker.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const checker = new ItemChecker(db);
+        let rowCount = 0;
+
+        window.mizoAlert = (title, msg) => {
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertMsg').innerText = msg;
+            document.getElementById('customAlert').style.display = 'flex';
+        };
+        window.closeAlert = () => document.getElementById('customAlert').style.display = 'none';
+
+        window.addRow = (savedData = null) => {
+            rowCount++;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="text-align:center; font-weight:bold;">${rowCount}</td>
+                <td>
+                    <input type="text" class="i-name" oninput="window.showSuggestions(this); window.autoSave()" value="${savedData?.name || ''}">
+                    <div class="suggestions-list"></div>
+                </td>
+                <td><input type="text" class="i-size" oninput="window.autoSave()" value="${savedData?.size || ''}"></td>
+                <td><input type="number" class="i-qty" oninput="window.calc(this); window.autoSave()" value="${savedData?.qty || ''}"></td>
+                <td><input type="number" class="i-rate" oninput="window.calc(this); window.autoSave()" value="${savedData?.rate || ''}"></td>
+                <td><input type="number" class="i-total" readonly></td>
+            `;
+            document.getElementById('billBody').appendChild(tr);
+        };
+
+        window.autoSave = () => {
+            const data = {
+                customer: document.getElementById('customerName').value,
+                address: document.getElementById('customerAddress').value,
+                items: []
+            };
+            document.querySelectorAll('#billBody tr').forEach(row => {
+                const name = row.querySelector('.i-name').value;
+                if(name) data.items.push({ name, size: row.querySelector('.i-size').value, qty: row.querySelector('.i-qty').value, rate: row.querySelector('.i-rate').value });
+            });
+            localStorage.setItem('bill_draft', JSON.stringify(data));
+        };
+
+        window.showSuggestions = (input) => {
+            const list = input.nextElementSibling;
+            const matches = checker.search(input.value); 
+            list.innerHTML = '';
+            if (!matches.length) { list.style.display = 'none'; return; }
+            list.style.display = 'block';
+            matches.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerText = `${p.name} [${p.size}] - Stock: ${p.displayStock}`;
+                div.onmousedown = () => {
+                    const row = input.closest('tr');
+                    row.querySelector('.i-name').value = p.name;
+                    row.querySelector('.i-size').value = p.size;
+                    row.querySelector('.i-rate').value = p.price;
+                    list.style.display = 'none';
+                    window.calc(row.querySelector('.i-rate'));
+                    window.autoSave();
+                };
+                list.appendChild(div);
+            });
+        };
+
+        window.calc = (el) => {
+            const row = el.closest('tr');
+            const q = parseFloat(row.querySelector('.i-qty').value) || 0;
+            const r = parseFloat(row.querySelector('.i-rate').value) || 0;
+            row.querySelector('.i-total').value = (q * r).toFixed(2);
+            let sum = 0;
+            document.querySelectorAll('.i-total').forEach(input => sum += parseFloat(input.value || 0));
+            document.getElementById('grandTotal').innerText = sum.toLocaleString('en-IN', {minimumFractionDigits: 2});
+        };
+
+        checker.syncInventory().then(count => {
+            document.getElementById('status-bar').innerText = `Warehouse Ready: ${count} Items`;
+            loadSavedDraft();
+        });
+
+        function loadSavedDraft() {
+            const draft = JSON.parse(localStorage.getItem('bill_draft'));
+            if (!draft || !draft.items) { for(let i=0; i<8; i++) window.addRow(); return; }
+            document.getElementById('customerName').value = draft.customer || '';
+            document.getElementById('customerAddress').value = draft.address || '';
+            draft.items.forEach(item => window.addRow(item));
+            if(draft.items.length < 8) for(let i=0; i < (8 - draft.items.length); i++) window.addRow();
+            document.querySelectorAll('.i-rate').forEach(el => window.calc(el));
+        }
+
+        document.getElementById('saveBill').onclick = async () => {
+            const customer = document.getElementById('customerName').value.trim();
+            const address = document.getElementById('customerAddress').value.trim();
+            const billDate = document.getElementById('billDate').value;
+            const billTime = document.getElementById('billTime').value;
+            
+            if (!customer || !address) return mizoAlert("HRIATTIRNA", "Customer hming leh Address hi dah khah vek a ngai!");
+
+            const batch = writeBatch(db); 
+            const billItems = [];
+            const rows = document.querySelectorAll('#billBody tr');
+            const btn = document.getElementById('saveBill');
+
+            try {
+                btn.innerText = "SAVING..."; btn.disabled = true;
+
+                for (const row of rows) {
+                    const name = row.querySelector('.i-name').value.trim();
+                    const qtySold = parseFloat(row.querySelector('.i-qty').value) || 0;
+                    const size = row.querySelector('.i-size').value;
+                    const rate = row.querySelector('.i-rate').value;
+
+                    if (name && qtySold > 0) {
+                        const deduction = checker.calculateStockDeduction(name, size, qtySold);
+                        
+                        if (deduction) {
+                            const itemRef = doc(db, "inventory_item", deduction.docId);
+                            const itemSnap = await getDoc(itemRef);
+                            
+                            if (itemSnap.exists()) {
+                                const itemData = itemSnap.data();
+                                let found = false;
+                                itemData.details.forEach(det => {
+                                    det.variations.forEach(v => {
+                                        if (det.name === name && v.size === size) {
+                                            v.qty = parseFloat(deduction.newTotalPieces);             found = true;
+                                        }
+                                    });
+                                });
+                                if (found) batch.set(itemRef, itemData);
+                            }
+
+                            const salesRef = doc(collection(db, "sales"));
+                            batch.set(salesRef, {
+                                itemName: name, size, piecesSold: qtySold,
+                                totalAmount: (qtySold * rate).toFixed(2),
+                                customerName: customer, date: billDate,
+                                timestamp: serverTimestamp()
+                            });
+
+                            billItems.push({ name, size, qty: qtySold, rate, total: (qtySold * rate).toFixed(2) });
+                        }
+                    }
+                }
+
+                if(!billItems.length) {
+                    btn.innerText = "SAVE & SUBTRACT STOCK"; btn.disabled = false;
+                    return mizoAlert("HRIATTIRNA", "Hralh tur thil i la ziak lo!");
+                }
+
+                const billRef = doc(collection(db, "bills"));
+                batch.set(billRef, {
+                    customer, address, date: billDate, time: billTime,
+                    items: billItems, grandTotal: document.getElementById('grandTotal').innerText,
+                    createdAt: serverTimestamp()
+                });
+
+                await batch.commit();
+                localStorage.removeItem('bill_draft');
+                mizoAlert("HLAWHTLING", "Stock thar a lut a, bill pawh a him e!");
+                setTimeout(() => window.location.reload(), 1500);
+
+            } catch (e) {
+                mizoAlert("ERROR", "Data a dik lo: " + e.message);
+                btn.innerText = "SAVE & SUBTRACT STOCK"; btn.disabled = false;
+            }
+        };
+
+        const now = new Date();
+        document.getElementById('billDate').value = now.toISOString().split('T')[0];
+        document.getElementById('billTime').value = now.toTimeString().slice(0,5);
+    </script>
+</body>
+</html>

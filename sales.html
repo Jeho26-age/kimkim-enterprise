@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sales Analytics | KimKim</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg: #000; --card: #111; --accent: #4ade80; --text: #fff; --gray: #888; --border: #222; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 100px; }
+
+        .header { margin-bottom: 20px; }
+        .header h1 { color: var(--accent); font-size: 22px; letter-spacing: 1px; margin: 0; font-weight: 800; }
+
+        /* Comparison Card */
+        .comparison-box { background: linear-gradient(145deg, #111, #050505); padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .comp-info label { font-size: 10px; color: var(--gray); text-transform: uppercase; display: block; }
+        .comp-info .trend { font-size: 14px; font-weight: bold; margin-top: 2px; }
+        .trend.up { color: var(--accent); }
+        .trend.down { color: #f87171; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+        .stat-card label { display: block; font-size: 10px; color: var(--gray); margin-bottom: 5px; text-transform: uppercase; }
+        .stat-card span { font-size: 20px; font-weight: 900; color: var(--accent); }
+
+        .chart-box { background: var(--card); padding: 15px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 25px; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        #timeFilter { background: #222; color: #fff; border: 1px solid #444; padding: 5px 10px; border-radius: 8px; font-size: 12px; outline: none; }
+
+        .chart-container { height: 220px; width: 100%; }
+
+        .ranking-title { font-size: 14px; font-weight: bold; margin-bottom: 15px; color: var(--gray); display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+        .rank-item { background: var(--card); border: 1px solid var(--border); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+        .rank-num { width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+        
+        .item-details { flex: 1; }
+        .item-details .name { font-size: 14px; font-weight: 700; color: #eee; }
+        .item-metrics { text-align: right; }
+        .item-metrics .val { display: block; font-weight: 900; color: #fbbf24; font-size: 15px; }
+
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; padding: 15px; background: rgba(0,0,0,0.9); border-top: 1px solid var(--border); display: flex; justify-content: center; box-sizing: border-box; }
+        .btn-back { width: 100%; background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 14px; border-radius: 12px; font-weight: 800; text-decoration: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="header"><h1>SALES RECORD</h1></div>
+
+    <div class="comparison-box">
+        <div class="comp-info">
+            <label>VS LAST MONTH</label>
+            <div id="monthlyTrend" class="trend">Calculating...</div>
+        </div>
+        <i class="fa-solid fa-chart-line" style="color: var(--accent); font-size: 24px;"></i>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card"><label>Total Pieces</label><span id="totalPcs">0</span></div>
+        <div class="stat-card"><label>Total Revenue</label><span>₹<span id="totalRev">0</span></span></div>
+    </div>
+
+    <div class="chart-box">
+        <div class="chart-header">
+            <label style="font-size:12px; color:var(--gray)">REVENUE TREND</label>
+            <select id="timeFilter" onchange="window.handleFilterChange(this.value)">
+                <option value="24h">Vawiin</option>
+                <option value="7d">Kar khat</option>
+                <option value="30d" selected>Thla khat</option>
+                <option value="all">A vai in</option>
+            </select>
+        </div>
+        <div class="chart-container"><canvas id="salesChart"></canvas></div>
+    </div>
+
+    <div class="ranking-title"><i class="fa fa-trophy" style="color:#fbbf24;"></i> Top Selling Items</div>
+    <div id="rankingList"></div>
+
+    <footer class="footer"><a href="admin.html" class="btn-back">BACK TO ADMIN</a></footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let rawSales = [];
+        let salesChart = null;
+
+        onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (snap) => {
+            rawSales = snap.docs.map(d => ({ ...d.data(), ts: d.data().timestamp?.toDate() }));
+            processData(document.getElementById('timeFilter').value);
+            calculateComparison();
+        });
+
+        window.handleFilterChange = (val) => processData(val);
+
+        function calculateComparison() {
+            const now = new Date();
+            const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+            let thisMonthRev = 0, lastMonthRev = 0;
+
+            rawSales.forEach(s => {
+                if (!s.ts) return;
+                const amt = parseFloat(s.totalAmount) || 0;
+                if (s.ts >= thisMonthStart) thisMonthRev += amt;
+                else if (s.ts >= lastMonthStart && s.ts <= lastMonthEnd) lastMonthRev += amt;
+            });
+
+            const trendEl = document.getElementById('monthlyTrend');
+            if (lastMonthRev === 0) {
+                trendEl.innerText = "First Month Active";
+                trendEl.className = "trend up";
+            } else {
+                const diff = ((thisMonthRev - lastMonthRev) / lastMonthRev) * 100;
+                trendEl.innerText = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}% vs Last Month`;
+                trendEl.className = diff >= 0 ? "trend up" : "trend down";
+            }
+        }
+
+        function processData(period) {
+            const now = new Date();
+            let filtered = rawSales;
+            if (period !== 'all') {
+                const hours = period === '24h' ? 24 : period === '7d' ? 168 : 720;
+                const cutoff = now.getTime() - (hours * 60 * 60 * 1000);
+                filtered = rawSales.filter(s => s.ts && s.ts.getTime() >= cutoff);
+            }
+
+            let totalPcs = 0, totalRev = 0;
+            const itemMap = {}, chartMap = {};
+
+            filtered.forEach(s => {
+                const qty = parseFloat(s.piecesSold) || 0;
+                const amt = parseFloat(s.totalAmount) || 0;
+                totalPcs += qty; totalRev += amt;
+
+                if (!itemMap[s.itemName]) itemMap[s.itemName] = { pcs: 0, cash: 0, name: s.itemName };
+                itemMap[s.itemName].pcs += qty;
+                itemMap[s.itemName].cash += amt;
+
+                const dKey = s.date || "Unknown";
+                chartMap[dKey] = (chartMap[dKey] || 0) + amt;
+            });
+
+            document.getElementById('totalPcs').innerText = totalPcs.toLocaleString();
+            document.getElementById('totalRev').innerText = totalRev.toLocaleString('en-IN');
+
+            renderList(Object.values(itemMap).sort((a, b) => b.pcs - a.pcs));
+            updateChart(chartMap);
+        }
+
+        function renderList(items) {
+            document.getElementById('rankingList').innerHTML = items.map((item, i) => `
+                <div class="rank-item">
+                    <div class="rank-num" style="color:${i==0?'#fbbf24':(i==1?'#94a3b8':(i==2?'#92400e':'#888'))}">${i+1}</div>
+                    <div class="item-details"><span class="name">${item.name}</span></div>
+                    <div class="item-metrics">
+                        <span class="val">₹${item.cash.toLocaleString('en-IN')}</span>
+                        <span style="font-size:10px; color:var(--gray)">${item.pcs} Pcs</span>
+                    </div>
+                </div>`).join('');
+        }
+
+        function updateChart(chartMap) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            if(salesChart) salesChart.destroy();
+
+            let labels = Object.keys(chartMap).reverse();
+            let values = Object.values(chartMap).reverse();
+
+            // CLIMB/DROP LOGIC: If only 1 day of data exists, add a starting 0 point 
+            // so the line "climbs" from zero to your current sales.
+            if(labels.length === 1) {
+                labels.unshift("Start");
+                values.unshift(0);
+            }
+
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        borderColor: '#4ade80',
+                        backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                        fill: true,
+                        tension: 0.4, // This creates the smooth curve
+                        borderWidth: 4,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#4ade80',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#555', font: {size: 10} } },
+                        x: { grid: { display: false }, ticks: { color: '#888', font: {size: 10} } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

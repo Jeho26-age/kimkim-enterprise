@@ -76,7 +76,7 @@
 
     let masterRecords = [];
 
-    window.fetchHistory = async () => {
+        window.fetchHistory = async () => {
         const range = document.getElementById('timeFilter').value;
         let q = query(collection(db, "bulk_history"), orderBy("timestamp", "desc"));
         
@@ -94,10 +94,17 @@
             const data = doc.data();
             masterRecords.push(data);
             const totals = getTotals(data.details);
+            
+            // Get the Kudam Name from Firestore data
+            const kudam = data.kudamName || 'Unknown Kudam';
+
             html += `
             <div class="history-card" data-search="${(data.cardID || '').toLowerCase()}">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="card-id">${data.cardID || 'NO ID'}</span>
+                    <div>
+                        <span class="card-id">${data.cardID || 'NO ID'}</span>
+                        <div style="font-size:11px; color:#aaa; margin-top:2px;">Kudam: <span style="color:var(--accent);">${kudam}</span></div>
+                    </div>
                     <span style="font-size:10px; color:#555;">${data.processedDate || ''}</span>
                 </div>
                 <div class="stat-grid">

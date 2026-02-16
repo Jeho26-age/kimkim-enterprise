@@ -186,7 +186,7 @@
                 let rowTotal = (q === 0) ? n : (q * n);
 
                 row.querySelector('.res-num').innerText = rowTotal;
-                itemData.variations.push({ size: sName, qty: q, innerQty: n });
+                itemData.variations.push({ size: sName, qty: q, inner: n });
 
                 const key = `${iName} (Size: ${sName})`;
                 groups[bId].items[key] = (groups[bId].items[key] || 0) + rowTotal;

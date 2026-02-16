@@ -2,81 +2,105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KimKim | Master Admin Hub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --bg: #000; --accent: #4ade80; --text: #fff; --blue: #3b82f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        :root { --bg: #000; --accent: #4ade80; --text: #fff; --card: #111; --border: #222; --gray: #888; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; touch-action: manipulation; }
 
-        /* SEARCH BAR - TOP */
-        .header-search { 
-            position: fixed; top: 0; left: 0; width: 100%; z-index: 5000; 
-            background: var(--bg); padding: 15px; border-bottom: 1px solid #222; 
-            box-sizing: border-box;
-        }
-        .search-input { 
-            width: 100%; background: #ffffff !important; color: #000 !important; 
-            border: none; padding: 15px; border-radius: 12px; font-weight: bold; 
-            font-size: 16px; box-sizing: border-box;
-        }
+        /* HEADER & SEARCH */
+        .header { position: fixed; top: 0; left: 0; width: 100%; z-index: 5000; background: rgba(0,0,0,0.9); padding: 15px; border-bottom: 1px solid var(--border); box-sizing: border-box; backdrop-filter: blur(10px); }
+        .search-input { width: 100%; background: var(--card) !important; color: #fff !important; border: 1px solid var(--border); padding: 12px; border-radius: 10px; font-size: 14px; outline: none; }
 
-        .main-container { padding-top: 90px; padding-bottom: 100px; text-align: center; }
+        /* CATEGORY RIBBON */
+        .category-ribbon { position: fixed; top: 73px; left: 0; width: 100%; z-index: 4900; display: flex; overflow-x: auto; gap: 10px; padding: 10px; background: #000; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+        .category-ribbon::-webkit-scrollbar { display: none; }
+        .cat-chip { white-space: nowrap; padding: 7px 15px; border-radius: 20px; background: var(--card); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--gray); cursor: pointer; }
+        .cat-chip.active { background: var(--accent) !important; color: #000 !important; border-color: var(--accent) !important; }
 
-        /* CATEGORY POPUP */
-        #categoryPopup { 
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #111; border: 2px solid var(--accent); padding: 20px; border-radius: 25px;
-            z-index: 6000; width: 85%; max-width: 400px; box-shadow: 0 0 50px #000;
-        }
+        /* MAIN CONTENT */
+        .main-container { padding-top: 135px; padding-bottom: 100px; }
+        #inventory-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+        .item-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+        .edit-badge { position: absolute; top: 8px; right: 8px; background: var(--accent); color: #000; padding: 6px; border-radius: 50%; font-size: 12px; cursor: pointer; z-index: 10; }
+        .item-image { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #0a0a0a; }
+        .item-info { padding: 10px; }
+        .item-name { font-size: 13px; font-weight: 700; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+        
+        .stock-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .size-badge { font-size: 11px; color: var(--gray); font-weight: bold; }
+        .stock-val { font-size: 11px; font-weight: 800; color: var(--accent); }
+
+        .calc-box-card { background: #050505; border: 1px solid #1a1a1a; border-radius: 8px; padding: 8px; }
+        .calc-math { font-size: 10px; text-align: center; color: #bbb; margin-bottom: 2px; }
+        .total-price { font-size: 14px; font-weight: 900; color: #fbbf24; text-align: center; display: block; }
+
+        /* POPUPS */
+        .popup-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; border: 2px solid var(--accent); padding: 20px; border-radius: 25px; z-index: 6000; width: 90%; max-width: 400px; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-        .menu-item { 
-            background: #222; color: #fff; text-decoration: none; padding: 20px 10px; 
-            border-radius: 15px; text-align: center; font-size: 13px; font-weight: bold; 
-            border: 1px solid #333; display: flex; flex-direction: column; align-items: center; gap: 10px;
-        }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5500; }
-
-        /* FOOTER NAV */
-        .footer-nav { 
-            position: fixed; bottom: 0; left: 0; width: 100%; background: #111; 
-            display: flex; justify-content: space-around; padding: 15px 0;
-            border-top: 1px solid #333; z-index: 4000;
-        }
-        .nav-btn { background: none; border: none; color: #777; text-align: center; font-size: 10px; cursor: pointer; flex: 1; }
-        .nav-btn i { display: block; font-size: 24px; margin-bottom: 5px; }
-        .nav-btn.active { color: var(--accent); }
+        .menu-item { background: #222; color: #fff; text-decoration: none; padding: 15px 5px; border-radius: 15px; text-align: center; font-size: 12px; font-weight: bold; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
         /* CALCULATOR */
-        #calcBox {
-            position: fixed; top: 120px; left: 20px; width: 300px; background: #222; 
-            border: 2px solid #444; border-radius: 20px; z-index: 7000; display: none;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.9); transform-origin: top left;
-        }
-        .calc-header { background: #333; padding: 15px; cursor: move; display: flex; justify-content: space-between; border-radius: 20px 20px 0 0; }
-        .calc-display { background: #000; padding: 20px; text-align: right; }
-        #screen { font-size: 28px; color: #fff; min-height: 35px; }
-        #preview { font-size: 18px; color: var(--accent); height: 20px; margin-top: 5px; }
-        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; }
-        .calc-grid button { height: 60px; border: none; border-radius: 12px; background: #333; color: #fff; font-size: 22px; font-weight: bold; }
-        .calc-footer { display: flex; justify-content: center; gap: 30px; padding: 15px; background: #1a1a1a; border-radius: 0 0 20px 20px; }
-        .zoom-btn { width: 45px; height: 45px; border-radius: 50%; border: none; color: white; font-size: 20px; }
+        #calcBox { position: fixed; top: 120px; left: 20px; width: 280px; background: #222; border: 2px solid #444; border-radius: 20px; z-index: 7000; display: none; transform-origin: top left; box-shadow: 0 10px 30px #000; }
+        .calc-header { background: #333; padding: 12px; display: flex; justify-content: space-between; border-radius: 20px 20px 0 0; font-size: 12px; cursor: move; }
+        .calc-display { background: #000; padding: 15px; text-align: right; }
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 10px; }
+        .calc-grid button { height: 45px; border-radius: 8px; border: none; background: #333; color: #fff; font-size: 18px; font-weight: bold; }
+        .calc-footer { display: flex; justify-content: center; gap: 20px; padding: 10px; background: #1a1a1a; border-radius: 0 0 20px 20px; }
+        .zoom-btn { width: 35px; height: 35px; border-radius: 50%; border: none; color: #fff; font-size: 16px; cursor: pointer; }
+
+        /* EDIT SHEET */
+        #editSheet { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; border-top: 2px solid var(--accent); border-radius: 20px 20px 0 0; z-index: 8000; transform: translateY(100%); transition: 0.3s; padding: 20px; box-sizing: border-box; }
+        .sheet-active { transform: translateY(0) !important; }
+        .img-edit-container { display: flex; align-items: center; gap: 15px; background: #1a1a1a; padding: 10px; border-radius: 12px; margin-bottom: 15px; border: 1px dashed #444; }
+        .img-preview-small { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; }
+        .edit-field label { display: block; font-size: 11px; color: var(--gray); margin-bottom: 4px; }
+        .edit-field input { width: 100%; background: #222; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; }
+
+        /* FOOTER NAV */
+        .footer-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: #111; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; z-index: 4000; }
+        .nav-btn { background: none; border: none; color: var(--gray); text-align: center; font-size: 10px; flex: 1; cursor: pointer; text-decoration: none; }
+        .nav-btn i { display: block; font-size: 24px; margin-bottom: 5px; }
+        .nav-btn.active { color: var(--accent); }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 5500; }
+        /* THE RED NOTIFICATION CIRCLE DESIGN */
+.notify-badge {
+    position: absolute;
+    top: -5px;
+    right: 5px;
+    background: #ef4444; /* Alert Red */
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%; /* Makes it a circle */
+    display: none; /* Stays hidden until stock is low */
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #000;
+    z-index: 100;
+}
+
+/* ADJUSTMENT FOR FOOTER BUTTONS */
+.nav-btn .notify-badge {
+    right: 20%;
+    top: 5px;
+}
+
     </style>
 </head>
 <body>
 
-    <div class="header-search">
-        <input type="text" id="masterSearch" class="search-input" placeholder="Search items..." oninput="saveSearch()">
-    </div>
+    <header class="header"><input type="text" id="masterSearch" class="search-input" placeholder="Search name or price..." oninput="window.saveSearch()"></header>
+    <div class="category-ribbon" id="categoryRibbon"></div>
 
-    <div class="main-container">
-        <i class="fa-solid fa-folder-tree" style="font-size: 50px; color: #333; margin-top: 40px;"></i>
-        <h2 style="color: #333;">Master Hub</h2>
-    </div>
+    <main class="main-container"><div id="inventory-grid"></div></main>
+    <div class="overlay" id="overlay" onclick="window.closeAll()"></div>
 
-    <div class="overlay" id="overlay" onclick="window.togglePopup(false)"></div>
-    <div id="categoryPopup">
-        <div style="text-align:center; font-weight:bold; color:var(--accent);">CATEGORIES</div>
+    <div id="categoryPopup" class="popup-modal">
+        <div style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:10px;">CATEGORIES</div>
         <div class="menu-grid">
             <a href="reciver.html" class="menu-item"><i class="fa-solid fa-shirt"></i>Thawmhnaw</a>
             <a href="s-reciver.html" class="menu-item"><i class="fa-solid fa-shoe-prints"></i>Slipper</a>
@@ -87,83 +111,209 @@
         </div>
     </div>
 
+   <div id="adminPopup" class="popup-modal">
+    <div style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:10px;">MASTER ADMIN CONTROL</div>
+    <div class="menu-grid">
+        <a href="bill.html" class="menu-item"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a href="staff.html" class="menu-item"><i class="fa-solid fa-users-gear"></i>Staff Mgmt</a>
+        <a href="notifi.html" class="menu-item"><i class="fa-solid fa-bell"></i>Notifications</a>
+        <a href="sales.html" class="menu-item"><i class="fa-solid fa-chart-line"></i>Sales</a>
+        <a href="p-bills.html" class="menu-item"><i class="fa-solid fa-receipt"></i>Bill Record</a>
+    </div>
+</div>
+
     <div id="calcBox">
-        <div class="calc-header" id="calcHeader"><span>DRAG</span><i class="fa-solid fa-times-circle" onclick="window.toggleCalc()" style="color:red;"></i></div>
-        <div class="calc-display"><div id="screen"></div><div id="preview">0</div></div>
+        <div class="calc-header" id="calcHeader"><span>DRAG</span><i class="fa-solid fa-times-circle" onclick="window.toggleCalc()" style="color:red; cursor:pointer;"></i></div>
+        <div class="calc-display"><div id="screen" style="min-height: 25px; font-size: 20px;"></div><div id="preview" style="color:var(--accent); font-size: 14px;">0</div></div>
         <div class="calc-grid">
-            <button style="color:red;" onclick="window.clr()">C</button>
-            <button onclick="window.ins('/')">÷</button><button onclick="window.ins('*')">×</button><button onclick="window.del()">←</button>
-            <button onclick="window.ins('7')">7</button><button onclick="window.ins('8')">8</button><button onclick="window.ins('9')">9</button><button onclick="window.ins('-')">−</button>
+            <button onclick="window.clr()" style="color:red;">C</button><button onclick="window.ins('/')">/</button><button onclick="window.ins('*')">×</button><button onclick="window.del()">←</button>
+            <button onclick="window.ins('7')">7</button><button onclick="window.ins('8')">8</button><button onclick="window.ins('9')">9</button><button onclick="window.ins('-')">-</button>
             <button onclick="window.ins('4')">4</button><button onclick="window.ins('5')">5</button><button onclick="window.ins('6')">6</button><button onclick="window.ins('+')">+</button>
-            <button onclick="window.ins('1')">1</button><button onclick="ins('2')">2</button><button onclick="window.ins('3')">3</button>
-            <button onclick="window.calculate()" style="background:var(--accent); color:#000;">=</button>
+            <button onclick="window.ins('1')">1</button><button onclick="window.ins('2')">2</button><button onclick="window.ins('3')">3</button><button onclick="window.calculate()" style="background:var(--accent); color:#000;">=</button>
             <button onclick="window.ins('0')" style="grid-column: span 2;">0</button><button onclick="window.ins('.')">.</button>
         </div>
         <div class="calc-footer">
-            <button class="zoom-btn" style="background:red;" onclick="window.changeSize(-1)"><i class="fa-solid fa-minus"></i></button>
-            <button class="zoom-btn" style="background:black; border:1px solid #444;" onclick="window.changeSize(1)"><i class="fa-solid fa-plus"></i></button>
+            <button class="zoom-btn" style="background:red;" onclick="window.changeCalcSize(-1)"><i class="fa-solid fa-minus"></i></button>
+            <button class="zoom-btn" style="background:blue;" onclick="window.changeCalcSize(1)"><i class="fa-solid fa-plus"></i></button>
         </div>
     </div>
 
-    <div class="footer-nav">
-        <button class="nav-btn active" onclick="location.reload()"><i class="fa-solid fa-home"></i>Home</button>
-        <button class="nav-btn" onclick="window.togglePopup(true)"><i class="fa-solid fa-layer-group"></i>Categories</button>
-        <button class="nav-btn" onclick="window.toggleCalc()"><i class="fa-solid fa-calculator"></i>Calc</button>
-        <button class="nav-btn" onclick="alert('Admin Mode')"><i class="fa-solid fa-shield-halved"></i>Admin</button>
+    <div id="editSheet">
+        <div class="img-edit-container">
+            <img id="imgPreview" class="img-preview-small" src="">
+            <div style="flex:1;">
+                <button onclick="document.getElementById('fileInput').click()" style="background:var(--accent); color:#000; border:none; padding:10px; border-radius:8px; font-weight:bold; width:100%;">
+                    <i class="fas fa-images"></i> GALLERY
+                </button>
+                <input type="file" id="fileInput" style="display:none;" onchange="window.uploadToCloudinary(this.files[0])">
+                <div id="uploadStatus" style="font-size:10px; color:var(--gray); margin-top:5px; text-align:center;">Cloudinary Ready</div>
+            </div>
+            <input type="hidden" id="editImgUrl">
+        </div>
+        <div class="edit-field"><label>Item Name</label><input type="text" id="editName"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="edit-field"><label>Size</label><input type="text" id="editSize"></div>
+            <div class="edit-field"><label>Stock</label><input type="number" id="editQty"></div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="edit-field"><label>Price (₹)</label><input type="number" id="editPrice"></div>
+            <div class="edit-field"><label>Inner Pcs</label><input type="number" id="editInner"></div>
+        </div>
+        <button style="width:100%; background:var(--accent); border:none; padding:15px; border-radius:12px; font-weight:bold;" id="btnSave">SAVE CHANGES</button>
     </div>
 
-    <script>
-        // FIX FOR THE "NOT DEFINED" ERRORS
-        window.togglePopup = (s) => {
-            document.getElementById('categoryPopup').style.display = s ? 'block' : 'none';
-            document.getElementById('overlay').style.display = s ? 'block' : 'none';
+    <nav class="footer-nav">
+        <a href="homepage.html" class="nav-btn active"><i class="fa-solid fa-home"></i>Home</a>
+        <button class="nav-btn" onclick="window.togglePopup('categoryPopup', true)"><i class="fa-solid fa-layer-group"></i>Categories</button>
+        <button class="nav-btn" onclick="window.toggleCalc()"><i class="fa-solid fa-calculator"></i>Calc</button>
+        <button class="nav-btn" onclick="window.togglePopup('adminPopup', true)"><i class="fa-solid fa-user-shield"></i>Admin</button>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
         };
 
-        window.toggleCalc = () => {
-            const c = document.getElementById('calcBox');
-            c.style.display = (c.style.display === 'block') ? 'none' : 'block';
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let allItems = [];
+        let currentEditRef = null;
+        let activeCategory = 'All';
+
+        const CLOUD_NAME = "duj2rx73z";
+        const PRESET = "kimkim_app_preset";
+
+        window.uploadToCloudinary = async (file) => {
+            if(!file) return;
+            const status = document.getElementById('uploadStatus');
+            status.innerText = "Uploading...";
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', PRESET);
+            try {
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+                document.getElementById('editImgUrl').value = data.secure_url;
+                document.getElementById('imgPreview').src = data.secure_url;
+                status.innerText = "Success!";
+            } catch (err) { status.innerText = "Failed!"; }
         };
 
-        window.saveSearch = () => {
-            localStorage.setItem('admin_search', document.getElementById('masterSearch').value);
-        };
-
-        window.onload = () => {
-            document.getElementById('masterSearch').value = localStorage.getItem('admin_search') || '';
-        };
-
-        // CALCULATOR MATH
-        let scale = 1, clicks = 0;
-        window.changeSize = (dir) => {
-            if(dir === 1 && clicks < 3) { clicks++; scale += 0.15; }
-            else if(dir === -1 && clicks > -3) { clicks--; scale -= 0.15; }
-            document.getElementById('calcBox').style.transform = `scale(${scale})`;
-        };
-
-        const screen = document.getElementById('screen');
-        const preview = document.getElementById('preview');
-        window.ins = (v) => { screen.innerText += v; window.updatePreview(); };
-        window.clr = () => { screen.innerText = ''; preview.innerText = '0'; };
-        window.del = () => { screen.innerText = screen.innerText.slice(0, -1); window.updatePreview(); };
-        window.updatePreview = () => {
-            try { preview.innerText = eval(screen.innerText.replace(/×/g, '*').replace(/÷/g, '/')) || '0'; } catch {}
-        };
-        window.calculate = () => { 
-            try { screen.innerText = eval(screen.innerText.replace(/×/g, '*').replace(/÷/g, '/')); preview.innerText = ''; } 
-            catch { screen.innerText='Error'; } 
-        };
-
-        // DRAG
-        const box = document.getElementById("calcBox");
-        const header = document.getElementById("calcHeader");
-        let ox, oy;
-        header.addEventListener("touchstart", (e) => {
-            ox = e.touches[0].clientX - box.offsetLeft; oy = e.touches[0].clientY - box.offsetTop;
+        onSnapshot(collection(db, "inventory_item"), (snap) => {
+            allItems = [];
+            let catSet = new Set(['All']);
+            snap.docs.forEach(d => {
+                const data = d.data();
+                catSet.add(data.category || "General");
+                if (data.details) {
+                    data.details.forEach((item, itemIdx) => {
+                        item.variations.forEach((v, vIdx) => {
+                            allItems.push({
+                                docId: d.id, itemIdx, vIdx,
+                                name: item.name, category: data.category,
+                                img: item.img, size: v.size, qty: v.qty,
+                                price: v.price, inner: v.inner,
+                                total: (parseFloat(v.price) || 0) * (parseFloat(v.inner) || 1),
+                                rawData: data
+                            });
+                        });
+                    });
+                }
+            });
+            renderChips(Array.from(catSet));
+            render();
         });
-        header.addEventListener("touchmove", (e) => {
-            box.style.left = (e.touches[0].clientX - ox) + "px"; box.style.top = (e.touches[0].clientY - oy) + "px";
-            e.preventDefault();
-        }, {passive: false});
+
+        window.openEditor = (docId, itemIdx, vIdx) => {
+            const item = allItems.find(i => i.docId === docId && i.itemIdx === itemIdx && i.vIdx === vIdx);
+            currentEditRef = { docId, itemIdx, vIdx, rawData: item.rawData };
+            document.getElementById('editName').value = item.name;
+            document.getElementById('editImgUrl').value = item.img;
+            document.getElementById('imgPreview').src = item.img || '';
+            document.getElementById('editSize').value = item.size;
+            document.getElementById('editQty').value = item.qty;
+            document.getElementById('editPrice').value = item.price;
+            document.getElementById('editInner').value = item.inner;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('editSheet').classList.add('sheet-active');
+        };
+
+        document.getElementById('btnSave').onclick = async () => {
+            const { docId, itemIdx, vIdx, rawData } = currentEditRef;
+            rawData.details[itemIdx].name = document.getElementById('editName').value;
+            rawData.details[itemIdx].img = document.getElementById('editImgUrl').value;
+            rawData.details[itemIdx].variations[vIdx].size = document.getElementById('editSize').value;
+            rawData.details[itemIdx].variations[vIdx].qty = document.getElementById('editQty').value;
+            rawData.details[itemIdx].variations[vIdx].price = document.getElementById('editPrice').value;
+            rawData.details[itemIdx].variations[vIdx].inner = document.getElementById('editInner').value;
+            await updateDoc(doc(db, "inventory_item", docId), { details: rawData.details });
+            window.closeAll();
+        };
+
+        function renderChips(cats) {
+            document.getElementById('categoryRibbon').innerHTML = cats.map(c => `<div class="cat-chip ${activeCategory === c ? 'active' : ''}" onclick="window.setCategory('${c}')">${c}</div>`).join('');
+        }
+
+        window.setCategory = (c) => { 
+            activeCategory = c;
+            render(); 
+        };
+
+        function render() {
+            const term = document.getElementById('masterSearch').value.toLowerCase();
+            const grid = document.getElementById('inventory-grid');
+            const filtered = allItems.filter(i => {
+                const matchesCat = (activeCategory === 'All' || i.category === activeCategory);
+                const matchesText = i.name.toLowerCase().includes(term) || i.total.toString().includes(term);
+                return matchesCat && matchesText;
+            });
+
+            grid.innerHTML = filtered.map(i => `
+                <div class="item-card">
+                    <div class="edit-badge" onclick="window.openEditor('${i.docId}', ${i.itemIdx}, ${i.vIdx})"><i class="fas fa-pencil"></i></div>
+                    <img src="${i.img || ''}" class="item-image">
+                    <div class="item-info">
+                        <div class="item-name">${i.name}</div>
+                        <div class="stock-row"><span class="size-badge">SIZE: ${i.size}</span><span class="stock-val">${i.qty} SETS</span></div>
+                        <div class="calc-box-card">
+                            <div class="calc-math">₹${i.price} × ${i.inner} Pcs</div>
+                            <span class="total-price">₹${i.total.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                </div>`).join('');
+        }
+        window.saveSearch = () => render();
+
+        // UI GLOBAL SCRIPTS
+        let calcScale = 1;
+        window.changeCalcSize = (dir) => { calcScale += (dir * 0.1); document.getElementById('calcBox').style.transform = `scale(${calcScale})`; };
+        window.togglePopup = (id, s) => { document.getElementById(id).style.display = s ? 'block' : 'none'; document.getElementById('overlay').style.display = s ? 'block' : 'none'; };
+        window.toggleCalc = () => { const c = document.getElementById('calcBox'); c.style.display = (c.style.display === 'block') ? 'none' : 'block'; };
+        window.closeAll = () => { 
+            document.getElementById('overlay').style.display = 'none'; 
+            document.getElementById('editSheet').classList.remove('sheet-active'); 
+            document.getElementById('categoryPopup').style.display='none'; 
+            document.getElementById('adminPopup').style.display='none'; 
+        };
+
+        // DRAG CALC
+        const box = document.getElementById("calcBox"), head = document.getElementById("calcHeader");
+        let ox, oy;
+        head.addEventListener("touchstart", (e) => { ox = e.touches[0].clientX - box.offsetLeft; oy = e.touches[0].clientY - box.offsetTop; });
+        head.addEventListener("touchmove", (e) => { box.style.left = (e.touches[0].clientX-ox)+"px"; box.style.top = (e.touches[0].clientY-oy)+"px"; e.preventDefault(); }, {passive: false});
+
+        // CALC MATH
+        const sc = document.getElementById('screen'), pr = document.getElementById('preview');
+        window.ins = (v) => { sc.innerText += v; try { pr.innerText = ''; } catch { sc.innerText = 'Error'; } };
     </script>
 </body>
 </html>

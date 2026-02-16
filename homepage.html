@@ -172,34 +172,41 @@
             let catSet = new Set(['All']);
             
             snap.docs.forEach(doc => {
-                const data = doc.data();
-                const category = data.category || "General";
-                catSet.add(category);
-                
-                if (data.details) {
-                    data.details.forEach(item => {
-                        item.variations.forEach(v => {
-                            const uprice = parseFloat(v.price) || 0;
-                            const incount = parseFloat(v.inner) || 1;
-                            allItems.push({
-                                docId: doc.id, // Needed for the link
-                                name: item.name,
-                                category: category,
-                                img: item.img || '',
-                                size: v.size || '-',
-                                qty: parseFloat(v.qty) || 0,
-                                inner: incount,
-                                unit: v.unit || 'set',
-                                price: uprice,
-                                total: uprice * incount
-                            });
-                        });
+    const data = doc.data();
+    const category = data.category || "General";
+    catSet.add(category);
+    
+    // SAFETY CHECK: Only proceed if 'details' is an actual Array (List)
+    if (data.details && Array.isArray(data.details)) {
+        data.details.forEach(item => {
+            // Additional safety for variations
+            if (item.variations && Array.isArray(item.variations)) {
+                item.variations.forEach(v => {
+                    const uprice = parseFloat(v.price) || 0;
+                    const incount = parseFloat(v.inner) || 1;
+                    allItems.push({
+                        docId: doc.id,
+                        name: item.name,
+                        category: category,
+                        img: item.img || '',
+                        size: v.size || '-',
+                        qty: parseFloat(v.qty) || 0,
+                        inner: incount,
+                        unit: v.unit || 'set',
+                        price: uprice,
+                        total: uprice * incount
                     });
-                }
-            });
-            renderChips(Array.from(catSet));
-            render();
+                });
+            }
         });
+    } else {
+        // This helps you find the broken item in the console
+        console.warn("Item structure is broken and was skipped:", doc.id);
+    }
+});
+renderChips(Array.from(catSet));
+render();
+});
 
         // Category Rendering
         function renderChips(cats) {
