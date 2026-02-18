@@ -3,114 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Kimkim Enterprise</title>
+    <title>Kimkim Enterprise | Loading...</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500&family=Playfair+Display:ital,wght@0,600;1,700&display=swap" rel="stylesheet">
     
     <style>
-        /* Decorative Background */
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #050505; /* Near Black */
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background-color: #050505;
             background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
-            color: #ffffff;
-            font-family: 'Montserrat', sans-serif;
-            overflow: hidden;
+            color: #ffffff; font-family: 'Montserrat', sans-serif; overflow: hidden;
         }
 
-        /* Decorative Gold Frame */
         .glass-card {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(10px);
-            padding: 60px;
+            padding: 50px 40px;
             border-radius: 20px;
             border: 1px solid rgba(212, 175, 55, 0.3);
-            box-shadow: 0 0 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(212, 175, 55, 0.1);
-            max-width: 700px;
-            text-align: center;
-            position: relative;
-            animation: fadeIn 2s ease-in-out;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            max-width: 500px; width: 85%;
+            text-align: center; position: relative;
+            animation: fadeIn 1.5s ease-in-out;
         }
 
-        /* Header Styling */
         h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 3.5rem;
-            margin: 0;
+            font-family: 'Playfair Display', serif; font-size: 2.8rem; margin: 0;
             background: linear-gradient(to bottom, #fdfcfb 0%, #d4af37 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-style: italic;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-style: italic;
         }
 
         .enterprise-name {
-            font-size: 1.5rem;
-            letter-spacing: 10px;
-            text-transform: uppercase;
-            margin-top: -10px;
-            margin-bottom: 40px;
-            color: #ffffff;
-            font-weight: 300;
+            font-size: 1.2rem; letter-spacing: 8px; text-transform: uppercase;
+            margin-top: -5px; margin-bottom: 30px; color: #ffffff; font-weight: 300;
         }
 
-        /* Mizo Description Styling */
-        .description-box {
-            margin: 30px 0;
-            border-top: 1px solid rgba(212, 175, 55, 0.2);
-            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-            padding: 20px 0;
+        /* LOADING BAR */
+        .loader-container {
+            width: 100%; background: rgba(255,255,255,0.05);
+            height: 2px; border-radius: 10px; margin: 30px 0; overflow: hidden;
+        }
+        .loader-fill {
+            height: 100%; background: #d4af37; width: 0%;
+            box-shadow: 0 0 10px #d4af37;
+            transition: width 0.3s ease-out; /* Smooth transition for the JS control */
         }
 
-        .mizo-text {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #e0e0e0;
-            font-weight: 300;
-            letter-spacing: 1px;
+        /* INFO TEXT */
+        .mizo-text { font-size: 0.95rem; color: #aaa; line-height: 1.6; font-weight: 300; }
+        
+        .builder-info {
+            margin-top: 35px; border-top: 1px solid rgba(212, 175, 55, 0.1);
+            padding-top: 20px;
         }
+        .role-tag { font-size: 8px; letter-spacing: 2px; color: #666; text-transform: uppercase; }
+        .builder-name { font-size: 15px; font-weight: 600; color: #d4af37; margin-top: 5px; }
+        .version-tag { font-size: 9px; color: #444; margin-top: 12px; font-family: monospace; }
 
-        /* Glowing OK Button */
-        .ok-btn {
-            margin-top: 30px;
-            padding: 18px 60px;
-            background: #d4af37;
-            color: #000;
-            text-decoration: none;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 3px;
-            border-radius: 50px;
-            display: inline-block;
-            transition: 0.3s all ease;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
-        .ok-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.7);
-            background: #ffffff;
-        }
-
-        /* Animation */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        /* Simple corner decorations */
-        .corner {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            border: 2px solid #d4af37;
-        }
-        .top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; }
-        .bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+        .corner { position: absolute; width: 30px; height: 30px; border: 1px solid #d4af37; opacity: 0.5; }
+        .top-left { top: 15px; left: 15px; border-right: none; border-bottom: none; }
+        .bottom-right { bottom: 15px; right: 15px; border-left: none; border-top: none; }
     </style>
 </head>
 <body>
@@ -122,16 +76,54 @@
         <h1>Welcome to</h1>
         <div class="enterprise-name">Kimkim Enterprise</div>
 
-        <div class="description-box">
-            <p class="mizo-text">
-                He page hi bungrua lo thleng (Goods Arrival) chhinchhiahna, <br>
-                stock endikna, leh <strong>bungraw man (Goods Price)</strong> <br>
-                fiahna tura siam a ni.
-            </p>
+        <div class="loader-container">
+            <div class="loader-fill"></div>
         </div>
 
-        <a href="homepage.html" class="ok-btn">OK / Lut Rawh</a>
+        <p class="mizo-text">
+            Initializing Secure Cloud Sync...<br>
+            Checking Inventory Database
+        </p>
+
+        <div class="builder-info">
+            <div class="role-tag">Custom Infrastructure Developed For</div>
+            <div style="font-size: 12px; color: #fff; margin-bottom: 5px;">KIMKIM ENTERPRISE</div>
+            <div class="role-tag" style="margin-top: 10px;">System Developer</div>
+            <div class="builder-name">JEHO</div>
+            <div class="version-tag">V.1.00 STABLE BUILD</div>
+        </div>
     </div>
+
+<script>
+    const fill = document.querySelector('.loader-fill');
+    const totalTime = 6000; // Exact 6 seconds
+    const startTime = Date.now();
+
+    function updateProgress() {
+        const elapsed = Date.now() - startTime;
+        let progress = (elapsed / totalTime) * 100;
+
+        // Add small random jitters to look like real data processing
+        if (progress < 99) {
+            progress += (Math.random() * 1.5);
+        }
+
+        if (progress >= 100) {
+            fill.style.width = '100%';
+            // Redirect exactly when the 6 seconds are up
+            setTimeout(() => {
+                window.location.href = "homepage.html";
+            }, 200);
+            return;
+        }
+
+        fill.style.width = progress + '%';
+        requestAnimationFrame(updateProgress);
+    }
+
+    // Start the forced timer
+    requestAnimationFrame(updateProgress);
+</script>
 
 </body>
 </html>
