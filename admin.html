@@ -6,6 +6,30 @@
     <title>KimKim | Master Admin Hub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+    /* CSS FOR THE RED NOTIFICATION CIRCLES */
+.notify-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ef4444; /* Red color */
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: none; /* JavaScript will change this to 'flex' when stock is low */
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #000;
+    z-index: 100;
+}
+
+/* Ensure the parent buttons can hold the badge in place */
+.menu-item, .nav-btn {
+    position: relative;
+}
+
         :root { --bg: #000; --accent: #4ade80; --text: #fff; --card: #111; --border: #222; --gray: #888; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; touch-action: manipulation; }
 
@@ -39,7 +63,7 @@
         /* POPUPS */
         .popup-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; border: 2px solid var(--accent); padding: 20px; border-radius: 25px; z-index: 6000; width: 90%; max-width: 400px; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-        .menu-item { background: #222; color: #fff; text-decoration: none; padding: 15px 5px; border-radius: 15px; text-align: center; font-size: 12px; font-weight: bold; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .menu-item { background: #222; color: #fff; text-decoration: none; padding: 15px 5px; border-radius: 15px; text-align: center; font-size: 12px; font-weight: bold; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
 
         /* CALCULATOR */
         #calcBox { position: fixed; top: 120px; left: 20px; width: 280px; background: #222; border: 2px solid #444; border-radius: 20px; z-index: 7000; display: none; transform-origin: top left; box-shadow: 0 10px 30px #000; }
@@ -60,34 +84,32 @@
 
         /* FOOTER NAV */
         .footer-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: #111; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; z-index: 4000; }
-        .nav-btn { background: none; border: none; color: var(--gray); text-align: center; font-size: 10px; flex: 1; cursor: pointer; text-decoration: none; }
+        .nav-btn { background: none; border: none; color: var(--gray); text-align: center; font-size: 10px; flex: 1; cursor: pointer; text-decoration: none; position: relative; }
         .nav-btn i { display: block; font-size: 24px; margin-bottom: 5px; }
         .nav-btn.active { color: var(--accent); }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 5500; }
-        /* THE RED NOTIFICATION CIRCLE DESIGN */
-.notify-badge {
-    position: absolute;
-    top: -5px;
-    right: 5px;
-    background: #ef4444; /* Alert Red */
-    color: white;
-    font-size: 10px;
-    font-weight: 900;
-    min-width: 18px;
-    height: 18px;
-    border-radius: 50%; /* Makes it a circle */
-    display: none; /* Stays hidden until stock is low */
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #000;
-    z-index: 100;
-}
 
-/* ADJUSTMENT FOR FOOTER BUTTONS */
-.nav-btn .notify-badge {
-    right: 20%;
-    top: 5px;
-}
+        /* NOTIFICATION BADGE STYLE */
+        .notify-badge {
+            position: absolute;
+            top: 2px;
+            right: 15%;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 900;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #000;
+            padding: 2px;
+            z-index: 100;
+        }
+        .nav-btn .notify-badge { top: 2px; right: 20%; }
+        .menu-item .notify-badge { top: 5px; right: 10px; }
 
     </style>
 </head>
@@ -98,17 +120,34 @@
 
     <main class="main-container"><div id="inventory-grid"></div></main>
     <div class="overlay" id="overlay" onclick="window.closeAll()"></div>
-
     <div id="categoryPopup" class="popup-modal">
         <div style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:10px;">CATEGORIES</div>
-        <div class="menu-grid">
-            <a href="reciver.html" class="menu-item"><i class="fa-solid fa-shirt"></i>Thawmhnaw</a>
-            <a href="s-reciver.html" class="menu-item"><i class="fa-solid fa-shoe-prints"></i>Slipper</a>
-            <a href="p-reciver.html" class="menu-item"><i class="fa-solid fa-flask"></i>Plastic</a>
-            <a href="t-reciver.html" class="menu-item"><i class="fa-solid fa-robot"></i>Toys</a>
-            <a href="et-reciver.html" class="menu-item"><i class="fa-solid fa-gamepad"></i>Toys Man to</a>
-            <a href="bag-reciver.html" class="menu-item"><i class="fa-solid fa-box-open"></i>Trip Tleng Thar</a>
-        </div>
+      <div class="menu-grid">
+    <a href="reciver.html" class="menu-item">
+        <i class="fa-solid fa-shirt"></i>Thawmhnaw
+        <span id="badge-cat-Thawmhnaw" class="notify-badge">0</span>
+    </a>
+    <a href="s-reciver.html" class="menu-item">
+        <i class="fa-solid fa-shoe-prints"></i>Slipper
+        <span id="badge-cat-Slipper" class="notify-badge">0</span>
+    </a>
+    <a href="p-reciver.html" class="menu-item">
+        <i class="fa-solid fa-flask"></i>Plastic
+        <span id="badge-cat-Plastic" class="notify-badge">0</span>
+    </a>
+    <a href="t-reciver.html" class="menu-item">
+        <i class="fa-solid fa-robot"></i>Toys
+        <span id="badge-cat-Toys" class="notify-badge">0</span>
+    </a>
+    <a href="et-reciver.html" class="menu-item">
+        <i class="fa-solid fa-gamepad"></i>Toys Man to
+        <span id="badge-cat-ToysManTo" class="notify-badge">0</span>
+    </a>
+    <a href="bag-reciver.html" class="menu-item">
+        <i class="fa-solid fa-box-open"></i>Trip Tleng Thar
+        <span id="badge-cat-TripTlengThar" class="notify-badge">0</span>
+    </a>
+</div>
     </div>
 
    <div id="adminPopup" class="popup-modal">
@@ -116,7 +155,10 @@
     <div class="menu-grid">
         <a href="bill.html" class="menu-item"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
         <a href="staff.html" class="menu-item"><i class="fa-solid fa-users-gear"></i>Staff Mgmt</a>
-        <a href="notify.html" class="menu-item"><i class="fa-solid fa-bell"></i>Notifications</a>
+        <a href="notify.html" class="menu-item">
+            <i class="fa-solid fa-bell"></i>Notifications
+            <span id="badge-notify-btn" class="notify-badge">0</span>
+        </a>
         <a href="sales.html" class="menu-item"><i class="fa-solid fa-chart-line"></i>Sales</a>
         <a href="p-bills.html" class="menu-item"><i class="fa-solid fa-receipt"></i>Bill Record</a>
     </div>
@@ -162,158 +204,228 @@
         <button style="width:100%; background:var(--accent); border:none; padding:15px; border-radius:12px; font-weight:bold;" id="btnSave">SAVE CHANGES</button>
     </div>
 
-    <nav class="footer-nav">
-        <a href="homepage.html" class="nav-btn active"><i class="fa-solid fa-home"></i>Home</a>
-        <button class="nav-btn" onclick="window.togglePopup('categoryPopup', true)"><i class="fa-solid fa-layer-group"></i>Categories</button>
-        <button class="nav-btn" onclick="window.toggleCalc()"><i class="fa-solid fa-calculator"></i>Calc</button>
-        <button class="nav-btn" onclick="window.togglePopup('adminPopup', true)"><i class="fa-solid fa-user-shield"></i>Admin</button>
-    </nav>
+   <nav class="footer-nav">
+    <button class="nav-btn" onclick="location.href='homepage.html'">
+        <i class="fa-solid fa-home"></i>Home
+    </button>
+    <button class="nav-btn" onclick="window.togglePopup('categoryPopup', true)">
+        <i class="fa-solid fa-layer-group"></i>Categories
+        <span id="badge-cat-footer" class="notify-badge">0</span>
+    </button>
+    <button class="nav-btn" onclick="window.toggleCalc()">
+        <i class="fa-solid fa-calculator"></i>Calc
+    </button>
+    <button class="nav-btn" onclick="window.togglePopup('adminPopup', true)">
+        <i class="fa-solid fa-user-shield"></i>Admin
+        <span id="badge-admin-footer" class="notify-badge">0</span>
+    </button>
+</nav>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
-            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
-            projectId: "kimkimenterprise-516c4",
-            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
-            messagingSenderId: "782456699398",
-            appId: "1:782456699398:web:c069d267ea8d62b197e187"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+        authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+        projectId: "kimkimenterprise-516c4",
+        storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+        messagingSenderId: "782456699398",
+        appId: "1:782456699398:web:c069d267ea8d62b197e187"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        let allItems = [];
-        let currentEditRef = null;
-        let activeCategory = 'All';
+    let allItems = [];
+    let currentEditRef = null;
+    let activeCategory = 'All';
 
-        const CLOUD_NAME = "duj2rx73z";
-        const PRESET = "kimkim_app_preset";
+    const CLOUD_NAME = "duj2rx73z";
+    const PRESET = "kimkim_app_preset";
 
-        window.uploadToCloudinary = async (file) => {
-            if(!file) return;
-            const status = document.getElementById('uploadStatus');
-            status.innerText = "Uploading...";
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('upload_preset', PRESET);
-            try {
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-                const data = await res.json();
-                document.getElementById('editImgUrl').value = data.secure_url;
-                document.getElementById('imgPreview').src = data.secure_url;
-                status.innerText = "Success!";
-            } catch (err) { status.innerText = "Failed!"; }
-        };
+    // --- THE FIX: ONE SINGLE BADGE FUNCTION ---
+    window.updateBadges = function() {
+    let totalLow = 0;
+    const counts = {};
+    
+    // 1. Force the map to look for UPPERCASE categories from your DB
+    const internalMap = { 
+        'THAWMHNAW': 'badge-cat-Thawmhnaw', 
+        'SLIPPER': 'badge-cat-Slipper', 
+        'PLASTIC': 'badge-cat-Plastic', 
+        'TOYS': 'badge-cat-Toys', 
+        'TOYS MAN TO': 'badge-cat-ToysManTo', 
+        'TRIP TLENG THAR': 'badge-cat-TripTlengThar' 
+    };
 
-        onSnapshot(collection(db, "inventory_item"), (snap) => {
-            allItems = [];
-            let catSet = new Set(['All']);
-            snap.docs.forEach(d => {
-                const data = d.data();
-                catSet.add(data.category || "General");
-                if (data.details) {
-                    data.details.forEach((item, itemIdx) => {
-                        item.variations.forEach((v, vIdx) => {
-                            allItems.push({
-                                docId: d.id, itemIdx, vIdx,
-                                name: item.name, category: data.category,
-                                img: item.img, size: v.size, qty: v.qty,
-                                price: v.price, inner: v.inner,
-                                total: (parseFloat(v.price) || 0) * (parseFloat(v.inner) || 1),
-                                rawData: data
-                            });
+    allItems.forEach(i => {
+        const stock = parseFloat(i.qty);
+        if (!isNaN(stock) && stock <= 5) {
+            totalLow++;
+            // Convert DB category to Uppercase to match the map above
+            const cat = i.category ? i.category.toUpperCase() : 'UNKNOWN'; 
+            counts[cat] = (counts[cat] || 0) + 1;
+        }
+    });
+
+    // 2. Update Category Popup Spans
+    Object.keys(internalMap).forEach(key => {
+        const el = document.getElementById(internalMap[key]);
+        if (el) {
+            const count = counts[key] || 0;
+            el.innerText = count;
+            el.style.display = count > 0 ? 'flex' : 'none';
+        }
+    });
+
+    // 3. Update Footer & Admin Badges
+    const footCat = document.getElementById('badge-cat-footer');
+    const footAdm = document.getElementById('badge-admin-footer');
+    const nBadge = document.getElementById('badge-notify-btn');
+
+    if (footCat) { footCat.innerText = totalLow; footCat.style.display = totalLow > 0 ? 'flex' : 'none'; }
+    if (footAdm) { footAdm.innerText = totalLow; footAdm.style.display = totalLow > 0 ? 'flex' : 'none'; }
+    if (nBadge) { nBadge.innerText = totalLow; nBadge.style.display = totalLow > 0 ? 'flex' : 'none'; }
+};
+
+
+    onSnapshot(collection(db, "inventory_item"), (snap) => {
+        allItems = [];
+        let catSet = new Set(['All']);
+        snap.docs.forEach(d => {
+            const data = d.data();
+            catSet.add(data.category || "General");
+            if (data.details) {
+                data.details.forEach((item, itemIdx) => {
+                    item.variations.forEach((v, vIdx) => {
+                        allItems.push({
+                            docId: d.id, itemIdx, vIdx,
+                            name: item.name, category: data.category,
+                            img: item.img, size: v.size, qty: v.qty,
+                            price: v.price, inner: v.inner,
+                            total: (parseFloat(v.price) || 0) * (parseFloat(v.inner) || 1),
+                            rawData: data
                         });
                     });
-                }
-            });
-            renderChips(Array.from(catSet));
-            render();
+                });
+            }
+        });
+        renderChips(Array.from(catSet));
+        render();
+        window.updateBadges(); // Call the fixed function
+    });
+
+    // --- CLOUDINARY & RENDER LOGIC ---
+    window.uploadToCloudinary = async (file) => {
+        if(!file) return;
+        const status = document.getElementById('uploadStatus');
+        status.innerText = "Uploading...";
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', PRESET);
+        try {
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById('editImgUrl').value = data.secure_url;
+            document.getElementById('imgPreview').src = data.secure_url;
+            status.innerText = "Success!";
+        } catch (err) { status.innerText = "Failed!"; }
+    };
+
+    window.openEditor = (docId, itemIdx, vIdx) => {
+        const item = allItems.find(i => i.docId === docId && i.itemIdx === itemIdx && i.vIdx === vIdx);
+        currentEditRef = { docId, itemIdx, vIdx, rawData: item.rawData };
+        document.getElementById('editName').value = item.name;
+        document.getElementById('editImgUrl').value = item.img;
+        document.getElementById('imgPreview').src = item.img || '';
+        document.getElementById('editSize').value = item.size;
+        document.getElementById('editQty').value = item.qty;
+        document.getElementById('editPrice').value = item.price;
+        document.getElementById('editInner').value = item.inner;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('editSheet').classList.add('sheet-active');
+    };
+
+    document.getElementById('btnSave').onclick = async () => {
+        const { docId, itemIdx, vIdx, rawData } = currentEditRef;
+        rawData.details[itemIdx].name = document.getElementById('editName').value;
+        rawData.details[itemIdx].img = document.getElementById('editImgUrl').value;
+        rawData.details[itemIdx].variations[vIdx].size = document.getElementById('editSize').value;
+        rawData.details[itemIdx].variations[vIdx].qty = document.getElementById('editQty').value;
+        rawData.details[itemIdx].variations[vIdx].price = document.getElementById('editPrice').value;
+        rawData.details[itemIdx].variations[vIdx].inner = document.getElementById('editInner').value;
+        await updateDoc(doc(db, "inventory_item", docId), { details: rawData.details });
+        window.closeAll();
+    };
+
+    function renderChips(cats) {
+        const ribbon = document.getElementById('categoryRibbon');
+        ribbon.innerHTML = cats.map(c => `
+            <div class="cat-chip ${activeCategory === c ? 'active' : ''}" 
+                 onclick="window.setCategory('${c}')">
+                 ${c}
+            </div>`).join('');
+    }
+
+    window.setCategory = (c) => { 
+        activeCategory = c; 
+        render(); 
+        const currentCats = new Set(['All']);
+        allItems.forEach(i => currentCats.add(i.category || "General"));
+        renderChips(Array.from(currentCats));
+    };
+
+    function render() {
+        const term = document.getElementById('masterSearch').value.toLowerCase();
+        const grid = document.getElementById('inventory-grid');
+        const filtered = allItems.filter(i => {
+            const matchesCat = (activeCategory === 'All' || i.category === activeCategory);
+            const matchesText = i.name.toLowerCase().includes(term) || i.total.toString().includes(term);
+            return matchesCat && matchesText;
         });
 
-        window.openEditor = (docId, itemIdx, vIdx) => {
-            const item = allItems.find(i => i.docId === docId && i.itemIdx === itemIdx && i.vIdx === vIdx);
-            currentEditRef = { docId, itemIdx, vIdx, rawData: item.rawData };
-            document.getElementById('editName').value = item.name;
-            document.getElementById('editImgUrl').value = item.img;
-            document.getElementById('imgPreview').src = item.img || '';
-            document.getElementById('editSize').value = item.size;
-            document.getElementById('editQty').value = item.qty;
-            document.getElementById('editPrice').value = item.price;
-            document.getElementById('editInner').value = item.inner;
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('editSheet').classList.add('sheet-active');
-        };
-
-        document.getElementById('btnSave').onclick = async () => {
-            const { docId, itemIdx, vIdx, rawData } = currentEditRef;
-            rawData.details[itemIdx].name = document.getElementById('editName').value;
-            rawData.details[itemIdx].img = document.getElementById('editImgUrl').value;
-            rawData.details[itemIdx].variations[vIdx].size = document.getElementById('editSize').value;
-            rawData.details[itemIdx].variations[vIdx].qty = document.getElementById('editQty').value;
-            rawData.details[itemIdx].variations[vIdx].price = document.getElementById('editPrice').value;
-            rawData.details[itemIdx].variations[vIdx].inner = document.getElementById('editInner').value;
-            await updateDoc(doc(db, "inventory_item", docId), { details: rawData.details });
-            window.closeAll();
-        };
-
-        function renderChips(cats) {
-            document.getElementById('categoryRibbon').innerHTML = cats.map(c => `<div class="cat-chip ${activeCategory === c ? 'active' : ''}" onclick="window.setCategory('${c}')">${c}</div>`).join('');
-        }
-
-        window.setCategory = (c) => { 
-            activeCategory = c;
-            render(); 
-        };
-
-        function render() {
-            const term = document.getElementById('masterSearch').value.toLowerCase();
-            const grid = document.getElementById('inventory-grid');
-            const filtered = allItems.filter(i => {
-                const matchesCat = (activeCategory === 'All' || i.category === activeCategory);
-                const matchesText = i.name.toLowerCase().includes(term) || i.total.toString().includes(term);
-                return matchesCat && matchesText;
-            });
-
-            grid.innerHTML = filtered.map(i => `
-                <div class="item-card">
-                    <div class="edit-badge" onclick="window.openEditor('${i.docId}', ${i.itemIdx}, ${i.vIdx})"><i class="fas fa-pencil"></i></div>
-                    <img src="${i.img || ''}" class="item-image">
-                    <div class="item-info">
-                        <div class="item-name">${i.name}</div>
-                        <div class="stock-row"><span class="size-badge">SIZE: ${i.size}</span><span class="stock-val">${i.qty} SETS</span></div>
-                        <div class="calc-box-card">
-                            <div class="calc-math">₹${i.price} × ${i.inner} Pcs</div>
-                            <span class="total-price">₹${i.total.toLocaleString('en-IN')}</span>
-                        </div>
+        grid.innerHTML = filtered.map(i => `
+            <div class="item-card">
+                <div class="edit-badge" onclick="window.openEditor('${i.docId}', ${i.itemIdx}, ${i.vIdx})"><i class="fas fa-pencil"></i></div>
+                <img src="${i.img || ''}" class="item-image">
+                <div class="item-info">
+                    <div class="item-name">${i.name}</div>
+                    <div class="stock-row"><span class="size-badge">SIZE: ${i.size}</span><span class="stock-val">${i.qty} SETS</span></div>
+                    <div class="calc-box-card">
+                        <div class="calc-math">₹${i.price} × ${i.inner} Pcs</div>
+                        <span class="total-price">₹${i.total.toLocaleString('en-IN')}</span>
                     </div>
-                </div>`).join('');
-        }
-        window.saveSearch = () => render();
+                </div>
+            </div>`).join('');
+    }
 
-        // UI GLOBAL SCRIPTS
-        let calcScale = 1;
-        window.changeCalcSize = (dir) => { calcScale += (dir * 0.1); document.getElementById('calcBox').style.transform = `scale(${calcScale})`; };
-        window.togglePopup = (id, s) => { document.getElementById(id).style.display = s ? 'block' : 'none'; document.getElementById('overlay').style.display = s ? 'block' : 'none'; };
-        window.toggleCalc = () => { const c = document.getElementById('calcBox'); c.style.display = (c.style.display === 'block') ? 'none' : 'block'; };
-        window.closeAll = () => { 
-            document.getElementById('overlay').style.display = 'none'; 
-            document.getElementById('editSheet').classList.remove('sheet-active'); 
-            document.getElementById('categoryPopup').style.display='none'; 
-            document.getElementById('adminPopup').style.display='none'; 
-        };
+    window.saveSearch = () => render();
 
-        // DRAG CALC
-        const box = document.getElementById("calcBox"), head = document.getElementById("calcHeader");
-        let ox, oy;
-        head.addEventListener("touchstart", (e) => { ox = e.touches[0].clientX - box.offsetLeft; oy = e.touches[0].clientY - box.offsetTop; });
-        head.addEventListener("touchmove", (e) => { box.style.left = (e.touches[0].clientX-ox)+"px"; box.style.top = (e.touches[0].clientY-oy)+"px"; e.preventDefault(); }, {passive: false});
+    // --- UTILITIES ---
+    window.togglePopup = (id, s) => { document.getElementById(id).style.display = s ? 'block' : 'none'; document.getElementById('overlay').style.display = s ? 'block' : 'none'; };
+    window.toggleCalc = () => { const c = document.getElementById('calcBox'); c.style.display = (c.style.display === 'block') ? 'none' : 'block'; };
+    window.closeAll = () => { 
+        document.getElementById('overlay').style.display = 'none'; 
+        document.getElementById('editSheet').classList.remove('sheet-active'); 
+        document.getElementById('categoryPopup').style.display='none'; 
+        document.getElementById('adminPopup').style.display='none'; 
+    };
 
-        // CALC MATH
-        const sc = document.getElementById('screen'), pr = document.getElementById('preview');
-        window.ins = (v) => { sc.innerText += v; try { pr.innerText = ''; } catch { sc.innerText = 'Error'; } };
-    </script>
+    // --- CALCULATOR ---
+    let calcScale = 1;
+    window.changeCalcSize = (dir) => { calcScale += (dir * 0.1); document.getElementById('calcBox').style.transform = `scale(${calcScale})`; };
+    const box = document.getElementById("calcBox"), head = document.getElementById("calcHeader");
+    let ox, oy;
+    head.addEventListener("touchstart", (e) => { ox = e.touches[0].clientX - box.offsetLeft; oy = e.touches[0].clientY - box.offsetTop; });
+    head.addEventListener("touchmove", (e) => { box.style.left = (e.touches[0].clientX-ox)+"px"; box.style.top = (e.touches[0].clientY-oy)+"px"; e.preventDefault(); }, {passive: false});
+
+    const sc = document.getElementById('screen'), pr = document.getElementById('preview');
+    window.ins = (v) => { sc.innerText += v; try { pr.innerText = eval(sc.innerText); } catch { pr.innerText = '...'; } };
+    window.clr = () => { sc.innerText = ''; pr.innerText = '0'; };
+    window.del = () => { sc.innerText = sc.innerText.slice(0, -1); };
+    window.calculate = () => { try { sc.innerText = eval(sc.innerText); pr.innerText = ''; } catch { sc.innerText = 'Error'; } };
+</script>
+
 </body>
 </html>

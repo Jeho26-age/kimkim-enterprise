@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Staff Management | KimKim</title>
+    <style>
+        :root {
+            --bg: #000; --card: #111; --accent: #4ade80;
+            --admin: #fbbf24; --border: #222; --text-dim: #888;
+        }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; padding: 20px; overflow-x: hidden; }
+        
+        /* PIN Layers & Modals */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2000; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        .pin-input {
+            background: #111; border: 2px solid var(--border);
+            color: var(--accent); font-size: 32px; text-align: center;
+            width: 180px; padding: 12px; border-radius: 12px; margin: 10px 0;
+            letter-spacing: 8px; -webkit-text-security: disc; outline: none;
+        }
+        .btn { 
+            background: var(--accent); color: black; border: none; 
+            padding: 14px 30px; border-radius: 12px; font-weight: 800; cursor: pointer;
+            margin-top: 10px; font-size: 14px; text-transform: uppercase;
+        }
+
+        /* Success Pop-up (Toast) */
+        #toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: black; padding: 15px 25px;
+            border-radius: 50px; font-weight: bold; font-size: 14px;
+            transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 3000; box-shadow: 0 10px 30px rgba(74, 222, 128, 0.3);
+        }
+
+        #mainContent, #setupLayer, #loginLayer, #resetModal { display: none; }
+
+        /* UI Styles */
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .nav-btn { background: #1a1a1a; color: white; border: 1px solid #333; padding: 10px 18px; border-radius: 12px; text-decoration: none; font-size: 11px; font-weight: bold; }
+        .user-button { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-top: 15px; }
+        .permission-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+        .perm-btn { border: none; padding: 12px 5px; border-radius: 10px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+        .staff-off, .admin-off { background: #222; color: #555; }
+        .staff-on { background: var(--accent); color: black; }
+        .admin-on { background: var(--admin); color: black; }
+    </style>
+</head>
+<body>
+
+    <div id="toast">✅ Password Changed</div>
+
+    <div id="setupLayer" class="overlay">
+        <h2 style="margin-bottom:5px;">Create PIN</h2>
+        <p style="color:var(--text-dim); font-size:12px; margin-bottom:20px;">Set a 4-digit code for your aunty</p>
+        <input type="password" id="newPin" class="pin-input" maxlength="4" inputmode="numeric" placeholder="0000">
+        <input type="password" id="confirmPin" class="pin-input" maxlength="4" inputmode="numeric" placeholder="0000">
+        <button class="btn" onclick="handleSetup()">Secure App</button>
+    </div>
+
+    <div id="loginLayer" class="overlay">
+        <h2>Enter PIN</h2>
+        <input type="password" id="loginPin" class="pin-input" maxlength="4" inputmode="numeric" oninput="handleLogin()">
+        <p style="color:var(--text-dim); font-size: 12px; margin-top: 10px;">Authorized Personnel Only</p>
+    </div>
+
+    <div id="resetModal" class="overlay" style="background: rgba(0,0,0,0.98);">
+        <h2>Update PIN</h2>
+        <input type="password" id="resetNewPin" class="pin-input" maxlength="4" inputmode="numeric" placeholder="NEW">
+        <input type="password" id="resetConfirmPin" class="pin-input" maxlength="4" inputmode="numeric" placeholder="CONFIRM">
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn" onclick="handleReset()">Update Now</button>
+            <button class="btn" style="background:#222; color:white; border:1px solid #333;" onclick="closeReset()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="mainContent">
+        <div class="top-nav">
+            <a href="admin.html" class="nav-btn">← BACK</a>
+            <button onclick="openReset()" class="nav-btn" style="border-color: #ef4444; color: #ef4444;">RESET PIN</button>
+        </div>
+        <h1 style="color:var(--accent); font-size: 22px; margin:0;">Staff Access</h1>
+        <p style="color:var(--text-dim); font-size:12px; margin:5px 0 20px 0;">Manage permissions for all accounts</p>
+        <div id="userContainer"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEe_nqxaUKrYBjSJssxuRzns8AHsLkX0",
+            authDomain: "kimkimenterprise-516c4.firebaseapp.com",
+            projectId: "kimkimenterprise-516c4",
+            storageBucket: "kimkimenterprise-516c4.firebasestorage.app",
+            messagingSenderId: "782456699398",
+            appId: "1:782456699398:web:c069d267ea8d62b197e187"
+        };
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.onload = () => {
+            const savedPin = localStorage.getItem('admin_staff_pin');
+            if (!savedPin) document.getElementById('setupLayer').style.display = 'flex';
+            else document.getElementById('loginLayer').style.display = 'flex';
+        };
+
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.style.bottom = '40px';
+            setTimeout(() => { t.style.bottom = '-100px'; }, 3000);
+        }
+
+        window.handleSetup = () => {
+            const p1 = document.getElementById('newPin').value;
+            const p2 = document.getElementById('confirmPin').value;
+            if (p1.length === 4 && p1 === p2) {
+                localStorage.setItem('admin_staff_pin', p1);
+                location.reload();
+            } else { alert("Check PIN length or match."); }
+        };
+
+        window.handleLogin = () => {
+            const input = document.getElementById('loginPin').value;
+            if (input === localStorage.getItem('admin_staff_pin')) {
+                document.getElementById('loginLayer').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                initFirebase();
+            }
+        };
+
+        window.openReset = () => document.getElementById('resetModal').style.display = 'flex';
+        window.closeReset = () => document.getElementById('resetModal').style.display = 'none';
+        
+        window.handleReset = () => {
+            const p1 = document.getElementById('resetNewPin').value;
+            const p2 = document.getElementById('resetConfirmPin').value;
+            if (p1.length === 4 && p1 === p2) {
+                localStorage.setItem('admin_staff_pin', p1);
+                closeReset();
+                showToast();
+            } else { alert("PINs do not match."); }
+        };
+
+        async function initFirebase() {
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) { window.location.replace("signin.html"); return; }
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists() && userDoc.data().isAdmin === true) loadUsers();
+                else { window.location.replace("homepage.html"); }
+            });
+        }
+
+        window.togglePerm = async (uid, field, currentVal) => {
+            try { await updateDoc(doc(db, "users", uid), { [field]: !currentVal }); }
+            catch (e) { console.error(e); }
+        };
+
+        function loadUsers() {
+            onSnapshot(collection(db, "users"), (snap) => {
+                const container = document.getElementById('userContainer');
+                container.innerHTML = "";
+                snap.forEach(userDoc => {
+                    const d = userDoc.data();
+                    const isS = d.isAuthorized === true;
+                    const isA = d.isAdmin === true;
+                    const div = document.createElement('div');
+                    div.className = 'user-button';
+                    div.innerHTML = `
+                        <span style="font-size:14px; font-weight:bold; color:white;">${d.email}</span>
+                        <div class="permission-row">
+                            <button onclick="window.togglePerm('${userDoc.id}', 'isAuthorized', ${isS})" class="perm-btn ${isS ? 'staff-on' : 'staff-off'}">${isS ? 'Staff Approved' : 'Authorize'}</button>
+                            <button onclick="window.togglePerm('${userDoc.id}', 'isAdmin', ${isA})" class="perm-btn ${isA ? 'admin-on' : 'admin-off'}">${isA ? 'Admin Access' : 'Make Admin'}</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
